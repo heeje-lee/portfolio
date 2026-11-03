@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heeje Lee Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Heeje Lee — design and physical computing portfolio, MDes UC Berkeley.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
+<style>
+/* Layout: fixed mono menu tree on the left, staggered two-up image rows on the right,
+   full-bleed splash that slides up on first scroll (after songforthemute.com). */
+:root {
+  --paper: #ffffff;
+  --ink: #000000;
+  --bar: #000000;
+  --bar-ink: #f4f0eb;
+  --splash: #a9aba6;
+  --on-image: #ffffff;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --unit: 6px;
+  --bar-h: 32px;
+  --menu-x: 12px;
+  --content-x: 15vw;
+  --intro-speed: 1.2s;
+  --intro-easing: cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--paper); color: var(--ink); }
+body { font: 12px/1.66 var(--mono); -webkit-font-smoothing: antialiased; }
+html.locked, html.locked body { overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1px dashed currentColor; outline-offset: 3px; }
+
+/* ---------- notification bar ---------- */
+.notify {
+  position: fixed; inset: 0 0 auto; z-index: 6;
+  height: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bar); color: var(--bar-ink);
+  display: flex; align-items: center; justify-content: center;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden;
+  transition: transform .5s ease-in-out;
+}
+.notify a { text-decoration: underline; text-underline-offset: 2px; }
+.notify .x { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); font-size: 18px; line-height: 1; }
+body.bar-closed .notify { transform: translateY(-100%); }
+
+/* ---------- menu (desktop tree) ---------- */
+.menu {
+  position: fixed; top: 0; left: var(--menu-x); height: 100%; z-index: 5;
+  display: flex; align-items: center;
+  padding-left: env(safe-area-inset-left, 0px);
+  color: var(--ink);
+  transition: color .6s ease-in-out;
+}
+body.splash-visible .menu { color: var(--on-image); }
+.branches { position: relative; padding-left: calc(var(--unit) * 2); }
+.branches::before {
+  content: ""; position: absolute; left: 0; top: .75rem;
+  width: 1px; height: calc(100% - 1.5rem); background: currentColor;
+}
+.branch { position: relative; min-width: 9rem; }
+.link {
+  display: flex; align-items: center; flex-wrap: nowrap;
+  padding: var(--unit) 0; line-height: 18px;
+  text-transform: uppercase; cursor: pointer;
+}
+.link .label { flex-grow: 0; padding-right: calc(var(--unit) * 2); white-space: pre; transition: opacity .3s; }
+.link .line {
+  display: none; flex-grow: 1; height: 1px; background: currentColor;
+  transform-origin: left center; animation: grow .3s ease-in-out both;
+}
+.branch.active > .link .line { display: block; }
+.root.has-active > .branch.active > .link .label { opacity: .45; }
+.sub {
+  display: none; position: absolute; right: 0; top: 50%;
+  transform: translateY(-50%) translateX(100%);
+  animation: reveal .5s ease-in-out .3s both;
+}
+.branch.active > .sub { display: block; }
+.sub .link:hover .label, .root > .branch > .link:hover .label { opacity: .6; }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- mobile header + overlay ---------- */
+.mhead, .moverlay { display: none; }
+
+/* ---------- splash ---------- */
+.splash {
+  position: fixed; inset: 0; z-index: 4; height: 100%;
+  background: var(--splash); color: var(--on-image); cursor: pointer;
+  transform: translateY(0%);
+  transition: transform var(--intro-speed) var(--intro-easing);
+  overflow: hidden;
+}
+.splash.out { transform: translateY(-100%); }
+.splash .ph { position: absolute; inset: 0; background: var(--splash); }
+.splash .ph img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 5s; }
+.splash .ph img.loaded { opacity: 1; }
+.lockup {
+  position: absolute; inset: 0; z-index: 2;
+  font-family: var(--sans); font-weight: 700; text-transform: uppercase;
+  letter-spacing: .018em; text-align: center;
+  font-size: clamp(22px, 2.75vw, 52px); line-height: 1;
+  animation: showup 2s ease-in-out 1.5s both;
+}
+.lockup > div { position: absolute; left: 0; right: 0; animation: showup 3s ease-in-out 1.5s both; }
+.lockup .w1 { top: 29%; }
+.lockup .w2 { top: 45%; display: flex; justify-content: center; gap: 8.5vw; }
+.lockup .w2 span:first-child { margin-left: -4vw; }
+.lockup .w3 { top: 67%; font-style: italic; }
+.splash .hint {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  text-align: center; font: 12px/1 var(--mono); text-transform: uppercase;
+  animation: showup 2s ease-in-out 3s both;
+}
+@keyframes showup { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- content ---------- */
+main {
+  padding-top: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
+  padding-left: var(--content-x);
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: 0;
+  max-width: 1600px;
+  transition: opacity .35s ease-in-out;
+}
+main.fade { opacity: 0; }
+.rows { display: grid; gap: calc(var(--unit) * 8); }
+.row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+.row.one { grid-template-columns: 1fr; }
+.item {
+  display: block; width: var(--w, 90%); max-width: 100%;
+  justify-self: start; transform: translateY(var(--o, 0%));
+}
+.item.right { justify-self: end; }
+.reveal { transition: transform 1.33s ease, opacity 1s ease; }
+.item.pre .reveal { opacity: 0; transform: translateY(60px); }
+.ph { position: relative; background: var(--c, #999); overflow: hidden; max-width: 100%; }
+.ph img { display: block; width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.cap {
+  position: absolute; top: 10px; left: 12px; right: 12px; z-index: 1;
+  color: var(--on-image); text-transform: uppercase; line-height: 1.4;
+}
+a.item .ph::after {
+  content: ""; position: absolute; inset: 0; background: var(--ink); opacity: 0;
+  transition: opacity .4s ease;
+}
+a.item:hover .ph::after { opacity: .08; }
+
+/* project + about pages */
+.intro {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: calc(var(--unit) * 6); padding-block: 15vh 10vh; align-items: end;
+}
+.title {
+  font-family: var(--sans); font-weight: 700; font-style: italic; text-transform: uppercase;
+  font-size: clamp(28px, 3.6vw, 60px); line-height: 1; letter-spacing: .01em;
+  margin: 0 0 calc(var(--unit) * 4); text-wrap: balance;
+}
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 18px; text-transform: uppercase; margin: 0; }
+.meta dt { opacity: .5; }
+.meta dd { margin: 0; }
+.body { max-width: 56ch; margin: 0; font-size: 13px; line-height: 1.7; }
+.body p { margin: 0 0 1em; }
+.sec-label {
+  display: flex; align-items: center; gap: 12px; text-transform: uppercase;
+  padding-block: 12vh 18px;
+}
+.sec-label::after { content: ""; flex: 0 0 9rem; height: 1px; background: currentColor; }
+.sec-text { max-width: 56ch; margin: 0 0 calc(var(--unit) * 6); font-size: 13px; line-height: 1.7; }
+.next {
+  display: flex; align-items: center; gap: 12px; text-transform: uppercase;
+  padding-block: 16vh 0;
+}
+.next .line { flex: 0 0 4rem; height: 1px; background: currentColor; transition: flex-basis .4s ease; }
+.next:hover .line { flex-basis: 8rem; }
+.contact-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; text-transform: uppercase; }
+.contact-list .sel { user-select: all; text-transform: none; }
+.copy { text-decoration: underline; text-underline-offset: 2px; margin-left: 8px; text-transform: uppercase; }
+
+footer.foot {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
+  padding-block: 18vh 48px; align-items: end;
+}
+footer.foot .slash { font-family: var(--sans); font-weight: 700; font-size: 40px; line-height: 1; }
+footer.foot p { margin: 0 0 12px; max-width: 56ch; }
+footer.foot nav { display: flex; gap: 18px; text-transform: uppercase; flex-wrap: wrap; }
+footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 860px) {
+  :root { --content-x: max(16px, env(safe-area-inset-left, 0px)); }
+  .menu { display: none; }
+  .mhead {
+    display: flex; justify-content: space-between; align-items: center;
+    position: fixed; left: 0; right: 0; z-index: 5;
+    top: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
+    height: 40px; text-transform: uppercase;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--paper); color: var(--ink);
+    transition: top .5s ease-in-out, background .4s, color .6s;
+  }
+  body.bar-closed .mhead { top: env(safe-area-inset-top, 0px); }
+  body.splash-visible .mhead { background: transparent; color: var(--on-image); }
+  main { padding-top: calc(var(--bar-h) + 52px + env(safe-area-inset-top, 0px)); }
+  body.bar-closed main { padding-top: calc(52px + env(safe-area-inset-top, 0px)); }
+  .moverlay {
+    position: fixed; inset: 0; z-index: 7; background: var(--paper); color: var(--ink);
+    padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+    overflow-y: auto; display: none; flex-direction: column;
+  }
+  .moverlay.open { display: flex; animation: reveal .3s ease both; }
+  .moverlay .top { display: flex; justify-content: space-between; text-transform: uppercase; margin-bottom: 24px; }
+  .moverlay .branches { padding-left: 12px; }
+  .moverlay .msub { padding-left: 12px; margin-left: 4px; position: relative; display: none; }
+  .moverlay .msub::before { content: ""; position: absolute; left: 0; top: .75rem; bottom: .75rem; width: 1px; background: currentColor; }
+  .moverlay .mbranch.open .msub { display: block; }
+  .row, .row.one { grid-template-columns: 1fr; gap: 24px; }
+  .rows { gap: 24px; }
+  .item, .item.right { width: 100%; transform: none; justify-self: stretch; }
+  .intro, footer.foot { grid-template-columns: 1fr; padding-block: 48px 32px; gap: 24px; }
+  .sec-label { padding-block: 56px 16px; }
+  .lockup { font-size: clamp(22px, 7vw, 40px); }
+  .lockup .w2 { gap: 9vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --intro-speed: .01s; }
+  .reveal, .lockup, .lockup > div, .splash .hint, .link .line, .sub { transition: none !important; animation: none !important; }
+  .item.pre .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="notify" id="notify">
+  <span><span id="barText"></span> <a href="#about">VIEW ABOUT</a></span>
+  <button class="x" id="barClose" aria-label="Close notice">×</button>
+</div>
+
+<header class="mhead">
+  <button id="mOpen" aria-expanded="false">Menu</button>
+  <a href="#home" id="mName"></a>
+</header>
+<div class="moverlay" id="mOverlay" role="dialog" aria-label="Menu">
+  <div class="top"><a href="#home" id="mName2"></a><button id="mClose">Close</button></div>
+  <div class="branches" id="mTree"></div>
+</div>
+
+<nav class="menu" id="menu" aria-label="Projects"><div class="branches root" id="tree"></div></nav>
+
+<section class="splash" id="splash" aria-label="Intro">
+  <div class="ph" id="splashPh"></div>
+  <div class="lockup" id="lockup"></div>
+  <div class="hint">Scroll</div>
+</section>
+
+<main id="main"></main>
+
+<script>
+/* =========================================================
+   EDIT YOUR CONTENT HERE
+   Every image is { c: placeholder color, r: aspect ratio, src: optional image path }.
+   Put real photos in an /images folder next to index.html and set src: "images/xyz.jpg".
+   ========================================================= */
+const SITE = {
+  first: "HEEJE",
+  last: "LEE",
+  tagline: "Creative Technologist,
+  bar: "Portfolio 2026 ",
+  splash: { c: "#a9aba6", src: "" },
+  email: "heeje.lee@berkeley.edu",
+  links: [
+    { label: "GitHub", href: "https://github.com/heeje-lee" },
+    { label: "Instagram", href: "https://instagram.com/" },
+    { label: "LinkedIn", href: "https://linkedin.com/" }
+  ],
+  blurb: "Heeje Lee. Designer and prototyper working between electrical engineering and interaction design. Objects that listen, react and remember."
+};
+
+const PROJECTS = [
+  {
+    slug: "expressive-mechanic", code: "P.01", title: "Expressive Mechanic", year: "2026",
+    type: "Interactive object", tools: "Turntable, sensing, motors",
+    summary: "A turntable you control with a glance. Turning your head toward the record plays it; looking away lets the music fall back. The project asks what listening feels like when the body, not a button, sets the pace.",
+    process: "Early sketches mapped how people physically turn toward sounds they care about. Each iteration tightened the loop between head movement and playback.",
+    prototype: "A working head-turn controlled turntable, tested with listeners in the studio.",
+    cover: { c: "#3f3b37", r: "4/5" },
+    processImgs: [{ c: "#b8b1a6", r: "4/5" }, { c: "#6d685f", r: "4/3" }, { c: "#8f8a82", r: "3/4" }, { c: "#d3cec4", r: "1/1" }],
+    protoImgs: [{ c: "#2e2c29", r: "4/3" }, { c: "#a39686", r: "4/5" }]
+  },
+  {
+    slug: "bart-station-board", code: "P.02", title: "BART Station Board", year: "2026",
+    type: "Ambient display, team project", tools: "ESP32, live transit data, paint",
+    summary: "A painting that knows when the next train leaves. Real-time BART arrivals at Downtown Berkeley appear inside a painted station scene, so the information lives in the room instead of on a phone.",
+    process: "We started from the commute itself: the minutes spent checking an app before leaving home. The board turns that check into a glance across the room.",
+    prototype: "An ESP32 pulls live departures and drives the lights embedded in the canvas.",
+    cover: { c: "#4b5462", r: "3/4" },
+    processImgs: [{ c: "#8a96a3", r: "4/3" }, { c: "#2f3640", r: "4/5" }, { c: "#c3c9cf", r: "1/1" }, { c: "#5d6b78", r: "3/4" }],
+    protoImgs: [{ c: "#1f242b", r: "4/5" }, { c: "#9aa4ae", r: "4/3" }]
+  },
+  {
+    slug: "collective-metabolism", code: "P.03", title: "Collective Metabolism Space", year: "2026",
+    type: "Tangible interface, team project", tools: "Spatial installation, sensors, actuation",
+    summary: "A room treated as a living body. It breathes, exhales, sweats and smells in response to the people inside it, so a crowd can feel its own presence as a shared metabolism.",
+    process: "Built for a tangible user interface course. We mapped bodily processes to room-scale outputs and tested which ones people noticed without being told.",
+    prototype: "A room-scale prototype with breathing surfaces and environmental responses.",
+    cover: { c: "#7a7f6c", r: "4/5" },
+    processImgs: [{ c: "#babfa9", r: "3/4" }, { c: "#545a49", r: "4/3" }, { c: "#9ca08b", r: "4/5" }, { c: "#353829", r: "1/1" }],
+    protoImgs: [{ c: "#c9ccbd", r: "4/3" }, { c: "#62674f", r: "4/5" }]
+  },
+  {
+    slug: "beauty-is-pain", code: "P.04", title: "Beauty is Pain", year: "2026",
+    type: "Interactive piece", tools: "Arduino, force sensor, p5.js, webcam",
+    summary: "Press down and your face gets smooshed. Let go and a beautify filter snaps it back to perfect. A force sensor turns the effort behind beauty standards into something you can feel in your hand.",
+    process: "The force sensing resistor reading drives a live distortion of the webcam image. Release is the trigger, so relief and the filter arrive at the same moment.",
+    prototype: "Arduino reads the sensor and streams it to a p5.js sketch running the camera effects.",
+    cover: { c: "#b79a92", r: "3/4" },
+    processImgs: [{ c: "#e0cfc9", r: "4/5" }, { c: "#8c6d66", r: "4/3" }, { c: "#cdb3ab", r: "1/1" }, { c: "#5e4642", r: "3/4" }],
+    protoImgs: [{ c: "#a5857c", r: "4/3" }, { c: "#ecdcd6", r: "4/5" }]
+  },
+  {
+    slug: "truth-machine", code: "P.05", title: "Truth Machine", year: "2026",
+    type: "Interactive piece", tools: "Arduino, ultrasonic sensor, p5.js",
+    summary: "Place your hand on the platform and answer a yes or no question. The machine delivers a verdict, truth or false, and it is entirely random. A small piece about how much authority we hand to machines.",
+    process: "An ultrasonic sensor detects the hand on the platform and starts the ritual. The pacing of the question and the pause before the verdict carry the drama.",
+    prototype: "Arduino and an ultrasonic sensor feed a p5.js interface that asks and judges.",
+    cover: { c: "#2b2b2a", r: "4/5" },
+    processImgs: [{ c: "#7c7b78", r: "4/3" }, { c: "#c4c2bd", r: "4/5" }, { c: "#4a4947", r: "3/4" }, { c: "#a19f9a", r: "1/1" }],
+    protoImgs: [{ c: "#161615", r: "4/5" }, { c: "#8e8c88", r: "4/3" }]
+  },
+  {
+    slug: "memory-orb", code: "P.06", title: "Memory Orb", year: "2026",
+    type: "Design concept", tools: "Sketching, form studies",
+    summary: "A handheld orb for recording a memory as it happens. It sits in the palm like a keepsake and asks how capturing a moment could feel closer to holding it than filming it.",
+    process: "The concept grew out of how-might-we framing around memory and music, then moved through sketches and form studies of something small enough to always carry.",
+    prototype: "Form models exploring scale, grip and how the orb signals that it is recording.",
+    cover: { c: "#c9c2b3", r: "3/4" },
+    processImgs: [{ c: "#8f8676", r: "4/5" }, { c: "#e3ded3", r: "4/3" }, { c: "#a99f8d", r: "3/4" }, { c: "#5f5749", r: "1/1" }],
+    protoImgs: [{ c: "#d8d1c2", r: "4/3" }, { c: "#776e5f", r: "4/5" }]
+  }
+];
+
+const ABOUT = {
+  slug: "about",
+  portrait: { c: "#8b8d88", r: "4/5" },
+  studio: { c: "#cfd0cb", r: "4/3" },
+  bio: [
+    "I am a graduate student in the Master of Design program at UC Berkeley, with a background in electrical engineering.",
+    "I build interactive objects and installations with microcontrollers, sensors and code, and use them to ask how technology could feel more bodily, ambient and personal."
+  ]
+};
+/* ========================================================= */
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const fullName = `${SITE.first} ${SITE.last}`;
+
+/* ---------- menu ---------- */
+const MENU = [
+  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug, subs: [
+    { label: "All", href: "#" + p.slug },
+    { label: "Process", href: "#" + p.slug, sec: "process" },
+    { label: "Prototype", href: "#" + p.slug, sec: "prototype" }
+  ] })),
+  { label: "About", href: "#about", subs: [
+    { label: "Bio", href: "#about" },
+    { label: "Contact", href: "#about", sec: "contact" },
+    ...SITE.links.slice(0, 1).map((l) => ({ label: l.label, href: l.href, ext: true }))
+  ] }
+];
+
+function linkHTML(s) {
+  const ext = s.ext ? ' target="_blank" rel="noopener"' : "";
+  const sec = s.sec ? ` data-sec="${s.sec}"` : "";
+  return `<a class="link" href="${s.href}"${ext}${sec}><span class="label">${esc(s.label)}</span></a>`;
+}
+$("#tree").innerHTML = MENU.map((m) => `
+  <div class="branch">
+    <a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span><span class="line"></span></a>
+    <div class="branches sub">${m.subs.map((s) => `<div class="branch">${linkHTML(s)}</div>`).join("")}</div>
+  </div>`).join("");
+
+const tree = $("#tree");
+let leaveTimer;
+tree.querySelectorAll(":scope > .branch").forEach((b) => {
+  b.addEventListener("mouseenter", () => {
+    clearTimeout(leaveTimer);
+    tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
+    b.classList.add("active");
+    tree.classList.add("has-active");
+  });
+});
+$("#menu").addEventListener("mouseleave", () => {
+  leaveTimer = setTimeout(() => {
+    tree.querySelectorAll(".active").forEach((x) => x.classList.remove("active"));
+    tree.classList.remove("has-active");
+  }, 350);
+});
+$("#menu").addEventListener("focusin", (e) => {
+  const b = e.target.closest(".root > .branch");
+  if (!b) return;
+  tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
+  b.classList.add("active"); tree.classList.add("has-active");
+});
+
+/* mobile menu */
+$("#mName").textContent = fullName;
+$("#mName2").textContent = fullName;
+$("#mTree").innerHTML = MENU.map((m) => `
+  <div class="mbranch">
+    <button class="link" type="button"><span class="label">${esc(m.label)}</span></button>
+    <div class="msub">${m.subs.map(linkHTML).join("")}</div>
+  </div>`).join("");
+$("#mTree").addEventListener("click", (e) => {
+  const btn = e.target.closest("button.link");
+  if (btn) {
+    const mb = btn.parentElement;
+    const was = mb.classList.contains("open");
+    $("#mTree").querySelectorAll(".mbranch.open").forEach((x) => x.classList.remove("open"));
+    if (!was) mb.classList.add("open");
+  }
+});
+const overlay = $("#mOverlay");
+function setOverlay(open) {
+  overlay.classList.toggle("open", open);
+  $("#mOpen").setAttribute("aria-expanded", String(open));
+}
+$("#mOpen").addEventListener("click", () => setOverlay(true));
+$("#mClose").addEventListener("click", () => setOverlay(false));
+
+/* section links (Process / Prototype / Contact) */
+let pendingSec = null;
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[href^='#']");
+  if (!a) return;
+  setOverlay(false);
+  pendingSec = a.dataset.sec || null;
+  if (a.getAttribute("href") === location.hash) {
+    e.preventDefault();
+    goSection(pendingSec);
+  }
+});
+function goSection(sec) {
+  const el = sec ? document.getElementById("sec-" + sec) : null;
+  window.scrollTo({ top: el ? el.getBoundingClientRect().top + scrollY - 80 : 0, behavior: "smooth" });
+  pendingSec = null;
+}
+
+/* ---------- notification bar ---------- */
+$("#barText").textContent = SITE.bar;
+$("#barClose").addEventListener("click", () => document.body.classList.add("bar-closed"));
+
+/* ---------- splash ---------- */
+const splash = $("#splash");
+$("#lockup").innerHTML = `
+  <div class="w1">${esc(SITE.first)}</div>
+  <div class="w2">${[...SITE.last].map((ch) => `<span>${esc(ch)}</span>`).join("")}</div>
+  <div class="w3">${esc(SITE.tagline)}</div>`;
+if (SITE.splash.src) {
+  const img = new Image();
+  img.alt = "";
+  img.onload = () => img.classList.add("loaded");
+  img.src = SITE.splash.src;
+  $("#splashPh").appendChild(img);
+}
+$("#splashPh").style.background = SITE.splash.c;
+
+let splashOn = false;
+function showSplash() {
+  splashOn = true;
+  document.documentElement.classList.add("locked");
+  document.body.classList.add("splash-visible");
+}
+function hideSplash() {
+  if (!splashOn) return;
+  splashOn = false;
+  splash.classList.add("out");
+  document.body.classList.remove("splash-visible");
+  setTimeout(() => {
+    document.documentElement.classList.remove("locked");
+    splash.hidden = true;
+  }, 1200);
+}
+window.addEventListener("wheel", (e) => { if (splashOn && e.deltaY > 0) hideSplash(); }, { passive: true });
+let touchY = null;
+window.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener("touchmove", (e) => {
+  if (splashOn && touchY !== null && touchY - e.touches[0].clientY > 12) hideSplash();
+}, { passive: true });
+window.addEventListener("keydown", (e) => {
+  if (splashOn && ["ArrowDown", "PageDown", " ", "Enter", "End"].includes(e.key)) { e.preventDefault(); hideSplash(); }
+});
+splash.addEventListener("click", hideSplash);
+
+/* ---------- rendering ---------- */
+function ph(img, cap) {
+  const inner = img.src ? `<img src="${esc(img.src)}" alt="${esc(img.alt || "")}" loading="lazy">` : "";
+  return `<div class="ph" style="--c:${img.c};aspect-ratio:${img.r}">${inner}${cap ? `<span class="cap">${esc(cap)}</span>` : ""}</div>`;
+}
+function item(img, { cap, href, w = 90, o = 0, right = false } = {}) {
+  const tag = href ? "a" : "div";
+  const h = href ? ` href="${href}"` : "";
+  return `<${tag} class="item${right ? " right" : ""}"${h} style="--w:${w}%;--o:${o}%"><div class="reveal">${ph(img, cap)}</div></${tag}>`;
+}
+/* widths and offsets borrowed from the reference grid: slightly uneven, right column dropped */
+const PAIRS = [[89, 0, 97, 4], [81, 6, 87, 0], [94, 0, 84, 9], [86, 3, 92, 0]];
+function twoUp(imgs, caps = [], hrefs = []) {
+  let out = "";
+  for (let i = 0; i < imgs.length; i += 2) {
+    const [lw, lo, rw, ro] = PAIRS[(i / 2) % PAIRS.length];
+    out += `<div class="row">${item(imgs[i], { cap: caps[i], href: hrefs[i], w: lw, o: lo })}${imgs[i + 1] ? item(imgs[i + 1], { cap: caps[i + 1], href: hrefs[i + 1], w: rw, o: ro }) : ""}</div>`;
+  }
+  return out;
+}
+function footer() {
+  return `<footer class="foot">
+    <div class="slash">/</div>
+    <div><p>${esc(SITE.blurb)}</p>
+      <nav><a href="#about" data-sec="contact">Contact</a>${SITE.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>
+    </div>
+  </footer>`;
+}
+
+function renderHome() {
+  return `<div class="rows">${twoUp(
+    PROJECTS.map((p) => p.cover),
+    PROJECTS.map((p) => `View ${p.title}`),
+    PROJECTS.map((p) => "#" + p.slug)
+  )}</div>${footer()}`;
+}
+
+function renderProject(p) {
+  const i = PROJECTS.indexOf(p);
+  const next = PROJECTS[(i + 1) % PROJECTS.length];
+  return `
+    <section class="intro">
+      <dl class="meta">
+        <dt>Project</dt><dd>${esc(p.code)}</dd>
+        <dt>Year</dt><dd>${esc(p.year)}</dd>
+        <dt>Type</dt><dd>${esc(p.type)}</dd>
+        <dt>Tools</dt><dd>${esc(p.tools)}</dd>
+      </dl>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body"><p>${esc(p.summary)}</p></div></div>
+    </section>
+    <div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>
+    <div class="sec-label" id="sec-process">Process</div>
+    <p class="sec-text">${esc(p.process)}</p>
+    <div class="rows">${twoUp(p.processImgs)}</div>
+    <div class="sec-label" id="sec-prototype">Prototype</div>
+    <p class="sec-text">${esc(p.prototype)}</p>
+    <div class="rows">${twoUp(p.protoImgs)}</div>
+    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
+    ${footer()}`;
+}
+
+function renderAbout() {
+  return `
+    <section class="intro">
+      <dl class="meta">
+        <dt>Name</dt><dd>${esc(fullName)}</dd>
+        <dt>Program</dt><dd>MDes, UC Berkeley</dd>
+        <dt>Background</dt><dd>Electrical engineering</dd>
+      </dl>
+      <div><h1 class="title">About</h1><div class="body">${ABOUT.bio.map((t) => `<p>${esc(t)}</p>`).join("")}</div></div>
+    </section>
+    <div class="rows">${twoUp([ABOUT.portrait, ABOUT.studio], ["Portrait", "Studio"])}</div>
+    <div class="sec-label" id="sec-contact">Contact</div>
+    <ul class="contact-list">
+      <li>Email <span class="sel" id="email">${esc(SITE.email)}</span><button class="copy" id="copyEmail" type="button">Copy</button></li>
+      ${SITE.links.map((l) => `<li><a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)} ↗</a></li>`).join("")}
+    </ul>
+    ${footer()}`;
+}
+
+/* reveal tiles as they scroll into view (tiles already on screen stay visible) */
+let io;
+function armReveal() {
+  if (io) io.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+  io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.remove("pre"); io.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll("#main .item").forEach((el) => {
+    if (el.getBoundingClientRect().top > innerHeight * 0.92) { el.classList.add("pre"); io.observe(el); }
+  });
+}
+
+const main = $("#main");
+function route() {
+  const slug = (location.hash || "#home").slice(1);
+  const p = PROJECTS.find((x) => x.slug === slug);
+  const html = p ? renderProject(p) : slug === "about" ? renderAbout() : renderHome();
+  document.title = p ? `${p.title} — ${fullName}` : slug === "about" ? `About — ${fullName}` : `${fullName} Portfolio`;
+  main.classList.add("fade");
+  setTimeout(() => {
+    main.innerHTML = html;
+    window.scrollTo(0, 0);
+    armReveal();
+    const ce = $("#copyEmail");
+    if (ce) ce.addEventListener("click", () => {
+      navigator.clipboard?.writeText(SITE.email).then(() => { ce.textContent = "Copied"; })
+        .catch(() => { const r = document.createRange(); r.selectNodeContents($("#email")); getSelection().removeAllRanges(); getSelection().addRange(r); });
+    });
+    main.classList.remove("fade");
+    if (pendingSec) setTimeout(() => goSection(pendingSec), 60);
+  }, main.innerHTML ? 300 : 0);
+}
+window.addEventListener("hashchange", route);
+
+/* first load: splash only on the home page */
+const startSlug = (location.hash || "#home").slice(1);
+if (startSlug === "home" || startSlug === "") showSplash(); else splash.hidden = true;
+route();
+</script>
+</body>
+</html>
