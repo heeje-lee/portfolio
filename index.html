@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
 <style>
-/* Layout: fixed mono menu tree on the left, staggered two-up image rows on the right,
+/* Layout: fixed mono menu tree along the top, staggered two-up image rows on the right,
    full-bleed splash that slides up on first scroll (after songforthemute.com). */
 :root {
   --paper: #ffffff;
@@ -23,8 +23,8 @@
   --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
   --unit: 6px;
   --bar-h: 32px;
-  --menu-x: 12px;
-  --content-x: 15vw;
+  --menu-h: 40px;
+  --content-x: 24px;
   --intro-speed: 1.2s;
   --intro-easing: cubic-bezier(0.46, 0.03, 0.52, 0.96);
   color-scheme: light;
@@ -54,45 +54,57 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .notify .x { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); font-size: 18px; line-height: 1; }
 body.bar-closed .notify { transform: translateY(-100%); }
 
-/* ---------- menu (desktop tree) ---------- */
+/* ---------- menu: the original tree, turned to run along the top ----------
+   Spine runs across the top; hovering an item grows a line down from it,
+   then its options fade in at the end of that line, stacked downward. */
 .menu {
-  position: fixed; top: 0; left: var(--menu-x); height: 100%; z-index: 5;
-  display: flex; align-items: center;
-  padding-left: env(safe-area-inset-left, 0px);
-  color: var(--ink);
-  transition: color .6s ease-in-out;
+  position: fixed; left: 0; right: 0; z-index: 5;
+  top: calc(var(--bar-h) + env(safe-area-inset-top, 0px) + 14px);
+  display: flex; justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  color: var(--ink); pointer-events: none;
+  transition: top .5s ease-in-out, color .6s ease-in-out;
 }
+body.bar-closed .menu { top: calc(env(safe-area-inset-top, 0px) + 14px); }
 body.splash-visible .menu { color: var(--on-image); }
-.branches { position: relative; padding-left: calc(var(--unit) * 2); }
+.branches { position: relative; padding-left: calc(var(--unit) * 2); pointer-events: auto; }
 .branches::before {
   content: ""; position: absolute; left: 0; top: .75rem;
   width: 1px; height: calc(100% - 1.5rem); background: currentColor;
 }
-.branch { position: relative; min-width: 9rem; }
+.root {
+  display: flex; flex-wrap: wrap; justify-content: center; column-gap: calc(var(--unit) * 4);
+  padding: calc(var(--unit) * 1.5) 0 0;
+}
+.root::before { top: 0; left: .75rem; width: calc(100% - 1.5rem); height: 1px; }
+.branch { position: relative; }
 .link {
   display: flex; align-items: center; flex-wrap: nowrap;
   padding: var(--unit) 0; line-height: 18px;
   text-transform: uppercase; cursor: pointer;
 }
 .link .label { flex-grow: 0; padding-right: calc(var(--unit) * 2); white-space: pre; transition: opacity .3s; }
+.root > .branch > .link { position: relative; justify-content: center; }
+.root > .branch > .link .label { padding-right: 0; }
 .link .line {
-  display: none; flex-grow: 1; height: 1px; background: currentColor;
-  transform-origin: left center; animation: grow .3s ease-in-out both;
+  display: none; position: absolute; left: 50%; top: 100%;
+  width: 1px; height: calc(var(--unit) * 5); background: currentColor;
+  transform-origin: center top; animation: grow .3s ease-in-out both;
 }
 .branch.active > .link .line { display: block; }
 .root.has-active > .branch.active > .link .label { opacity: .45; }
 .sub {
-  display: none; position: absolute; right: 0; top: 50%;
-  transform: translateY(-50%) translateX(100%);
+  display: none; position: absolute; left: 50%;
+  top: calc(100% + var(--unit) * 5);
   animation: reveal .5s ease-in-out .3s both;
 }
+.sub .link { padding: calc(var(--unit) / 2) 0; }
+.sub::before { top: 0; height: calc(100% - .75rem); }
 .branch.active > .sub { display: block; }
 .sub .link:hover .label, .root > .branch > .link:hover .label { opacity: .6; }
-@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
-
-/* ---------- mobile header + overlay ---------- */
-.mhead, .moverlay { display: none; }
 
 /* ---------- splash ---------- */
 .splash {
@@ -123,17 +135,19 @@ body.splash-visible .menu { color: var(--on-image); }
   text-align: center; font: 12px/1 var(--mono); text-transform: uppercase;
   animation: showup 2s ease-in-out 3s both;
 }
+.splash.seen .lockup, .splash.seen .lockup > div, .splash.seen .hint { animation: none; }
 @keyframes showup { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- content ---------- */
 main {
-  padding-top: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
-  padding-left: var(--content-x);
+  padding-top: calc(var(--bar-h) + 14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px));
+  padding-left: max(var(--content-x), env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 0;
   max-width: 1600px;
   transition: opacity .35s ease-in-out;
 }
+body.bar-closed main { padding-top: calc(14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px)); }
 main.fade { opacity: 0; }
 .rows { display: grid; gap: calc(var(--unit) * 8); }
 .row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
@@ -199,33 +213,7 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 
 /* ---------- narrow screens ---------- */
 @media (max-width: 860px) {
-  :root { --content-x: max(16px, env(safe-area-inset-left, 0px)); }
-  .menu { display: none; }
-  .mhead {
-    display: flex; justify-content: space-between; align-items: center;
-    position: fixed; left: 0; right: 0; z-index: 5;
-    top: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
-    height: 40px; text-transform: uppercase;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    background: var(--paper); color: var(--ink);
-    transition: top .5s ease-in-out, background .4s, color .6s;
-  }
-  body.bar-closed .mhead { top: env(safe-area-inset-top, 0px); }
-  body.splash-visible .mhead { background: transparent; color: var(--on-image); }
-  main { padding-top: calc(var(--bar-h) + 52px + env(safe-area-inset-top, 0px)); }
-  body.bar-closed main { padding-top: calc(52px + env(safe-area-inset-top, 0px)); }
-  .moverlay {
-    position: fixed; inset: 0; z-index: 7; background: var(--paper); color: var(--ink);
-    padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
-    overflow-y: auto; display: none; flex-direction: column;
-  }
-  .moverlay.open { display: flex; animation: reveal .3s ease both; }
-  .moverlay .top { display: flex; justify-content: space-between; text-transform: uppercase; margin-bottom: 24px; }
-  .moverlay .branches { padding-left: 12px; }
-  .moverlay .msub { padding-left: 12px; margin-left: 4px; position: relative; display: none; }
-  .moverlay .msub::before { content: ""; position: absolute; left: 0; top: .75rem; bottom: .75rem; width: 1px; background: currentColor; }
-  .moverlay .mbranch.open .msub { display: block; }
+  :root { --content-x: 16px; }
   .row, .row.one { grid-template-columns: 1fr; gap: 24px; }
   .rows { gap: 24px; }
   .item, .item.right { width: 100%; transform: none; justify-self: stretch; }
@@ -246,15 +234,6 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 <div class="notify" id="notify">
   <span><span id="barText"></span> <a href="#about">VIEW ABOUT</a></span>
   <button class="x" id="barClose" aria-label="Close notice">×</button>
-</div>
-
-<header class="mhead">
-  <button id="mOpen" aria-expanded="false">Menu</button>
-  <a href="#home" id="mName"></a>
-</header>
-<div class="moverlay" id="mOverlay" role="dialog" aria-label="Menu">
-  <div class="top"><a href="#home" id="mName2"></a><button id="mClose">Close</button></div>
-  <div class="branches" id="mTree"></div>
 </div>
 
 <nav class="menu" id="menu" aria-label="Projects"><div class="branches root" id="tree"></div></nav>
@@ -401,12 +380,18 @@ tree.querySelectorAll(":scope > .branch").forEach((b) => {
     tree.classList.add("has-active");
   });
 });
-$("#menu").addEventListener("mouseleave", () => {
-  leaveTimer = setTimeout(() => {
-    tree.querySelectorAll(".active").forEach((x) => x.classList.remove("active"));
-    tree.classList.remove("has-active");
-  }, 350);
-});
+function closeMenu() {
+  tree.querySelectorAll(".active").forEach((x) => x.classList.remove("active"));
+  tree.classList.remove("has-active");
+}
+tree.addEventListener("mouseleave", () => { leaveTimer = setTimeout(closeMenu, 350); });
+tree.addEventListener("click", (e) => { if (e.target.closest(".sub a")) closeMenu(); });
+$("#menu").addEventListener("focusout", (e) => { if (!$("#menu").contains(e.relatedTarget)) closeMenu(); });
+/* keep the page content clear of the menu, however many rows it wraps to */
+const setMenuH = () => document.documentElement.style.setProperty("--menu-h", tree.offsetHeight + "px");
+setMenuH();
+if ("ResizeObserver" in window) new ResizeObserver(setMenuH).observe(tree);
+document.fonts?.ready.then(setMenuH);
 $("#menu").addEventListener("focusin", (e) => {
   const b = e.target.closest(".root > .branch");
   if (!b) return;
@@ -414,37 +399,11 @@ $("#menu").addEventListener("focusin", (e) => {
   b.classList.add("active"); tree.classList.add("has-active");
 });
 
-/* mobile menu */
-$("#mName").textContent = fullName;
-$("#mName2").textContent = fullName;
-$("#mTree").innerHTML = MENU.map((m) => `
-  <div class="mbranch">
-    <button class="link" type="button"><span class="label">${esc(m.label)}</span></button>
-    <div class="msub">${m.subs.map(linkHTML).join("")}</div>
-  </div>`).join("");
-$("#mTree").addEventListener("click", (e) => {
-  const btn = e.target.closest("button.link");
-  if (btn) {
-    const mb = btn.parentElement;
-    const was = mb.classList.contains("open");
-    $("#mTree").querySelectorAll(".mbranch.open").forEach((x) => x.classList.remove("open"));
-    if (!was) mb.classList.add("open");
-  }
-});
-const overlay = $("#mOverlay");
-function setOverlay(open) {
-  overlay.classList.toggle("open", open);
-  $("#mOpen").setAttribute("aria-expanded", String(open));
-}
-$("#mOpen").addEventListener("click", () => setOverlay(true));
-$("#mClose").addEventListener("click", () => setOverlay(false));
-
 /* section links (Process / Prototype / Contact) */
 let pendingSec = null;
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[href^='#']");
   if (!a) return;
-  setOverlay(false);
   pendingSec = a.dataset.sec || null;
   if (a.getAttribute("href") === location.hash) {
     e.preventDefault();
@@ -477,29 +436,52 @@ if (SITE.splash.src) {
 $("#splashPh").style.background = SITE.splash.c;
 
 let splashOn = false;
-function showSplash() {
+let splashBusy = false;   /* ignore input while the slide is running */
+let hideTimer;
+const atHome = () => ["", "#home"].includes(location.hash);
+function settle() { splashBusy = true; setTimeout(() => { splashBusy = false; }, 1300); }
+function showSplash(animate) {
+  if (splashOn) return;
+  clearTimeout(hideTimer);
   splashOn = true;
   document.documentElement.classList.add("locked");
   document.body.classList.add("splash-visible");
+  splash.hidden = false;
+  if (animate) {
+    splash.classList.add("seen");
+    void splash.offsetHeight;   /* start from above the screen, then slide down */
+    settle();
+  }
+  splash.classList.remove("out");
 }
 function hideSplash() {
-  if (!splashOn) return;
+  if (!splashOn || splashBusy) return;
   splashOn = false;
+  settle();
   splash.classList.add("out");
   document.body.classList.remove("splash-visible");
-  setTimeout(() => {
+  hideTimer = setTimeout(() => {
     document.documentElement.classList.remove("locked");
     splash.hidden = true;
   }, 1200);
 }
-window.addEventListener("wheel", (e) => { if (splashOn && e.deltaY > 0) hideSplash(); }, { passive: true });
+/* scrolling up past the top of the home page brings the opening screen back */
+function tryReturn() { if (!splashOn && !splashBusy && atHome() && scrollY <= 0) showSplash(true); }
+window.addEventListener("wheel", (e) => {
+  if (splashOn && e.deltaY > 0) hideSplash();
+  else if (e.deltaY < 0) tryReturn();
+}, { passive: true });
 let touchY = null;
 window.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; }, { passive: true });
 window.addEventListener("touchmove", (e) => {
-  if (splashOn && touchY !== null && touchY - e.touches[0].clientY > 12) hideSplash();
+  if (touchY === null) return;
+  const dy = touchY - e.touches[0].clientY;
+  if (splashOn && dy > 12) hideSplash();
+  else if (dy < -40) tryReturn();
 }, { passive: true });
 window.addEventListener("keydown", (e) => {
   if (splashOn && ["ArrowDown", "PageDown", " ", "Enter", "End"].includes(e.key)) { e.preventDefault(); hideSplash(); }
+  else if (["ArrowUp", "PageUp", "Home"].includes(e.key)) tryReturn();
 });
 splash.addEventListener("click", hideSplash);
 
@@ -620,7 +602,7 @@ window.addEventListener("hashchange", route);
 
 /* first load: splash only on the home page */
 const startSlug = (location.hash || "#home").slice(1);
-if (startSlug === "home" || startSlug === "") showSplash(); else splash.hidden = true;
+if (startSlug === "home" || startSlug === "") showSplash(false); else splash.hidden = true;
 route();
 </script>
 </body>
