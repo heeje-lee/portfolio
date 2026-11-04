@@ -202,6 +202,37 @@ a.item:hover .ph::after { opacity: .08; }
 .contact-list .sel { user-select: all; text-transform: none; }
 .copy { text-decoration: underline; text-underline-offset: 2px; margin-left: 8px; text-transform: uppercase; }
 
+/* ---------- moodboard project layout (scattered, drifting images) ---------- */
+main { overflow-x: clip; }
+.mb {
+  width: 75%; margin: 0 auto; padding-top: calc(var(--unit) * 8);
+  display: flex; flex-wrap: wrap; justify-content: space-evenly; align-items: center;
+  --k: 1;
+}
+.mb-item { position: relative; z-index: 1; width: 25%; margin-bottom: calc(var(--unit) * 8); touch-action: pan-y; }
+.mb-item:nth-child(2n) { margin-left: auto; margin-right: 0; }
+.mb-item.small { width: 16.666%; }
+.mb-item.large { width: 41.666%; }
+.mb-story {
+  transform: translate(calc(var(--x0) * var(--k)), calc(var(--y0) * var(--k)));
+  opacity: 0; transition: transform 1.33s, opacity 1s;
+}
+.mb-item.in .mb-story { transform: translate(calc(var(--x) * var(--k)), calc(var(--y) * var(--k))); opacity: 1; }
+.mb-media { position: relative; overflow: hidden; background: var(--c, #999); }
+.mb-media img, .mb-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; }
+.mb-cap { margin-top: 6px; font-size: 10px; line-height: 1.4; }
+@media (hover: hover) {
+  .mb-item { cursor: grab; }
+  .mb-item.dragging { cursor: grabbing; }
+}
+.mb-note { max-width: 62ch; margin: calc(var(--unit) * 12) auto calc(var(--unit) * 14); font-size: 13px; line-height: 1.7; }
+.mb-note p { margin: 0 0 1em; }
+.mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
+.mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
+.rv { transition: transform 1.33s ease, opacity 1s ease; }
+.rv.pre { opacity: 0; transform: translateY(40px); }
+.intro.slim .body:empty { display: none; }
+
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
   padding-block: 18vh 48px; align-items: end;
@@ -213,6 +244,10 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 
 /* ---------- narrow screens ---------- */
 @media (max-width: 860px) {
+  .mb { width: 100%; --k: .35; }
+  .mb-item, .mb-item.large { width: 80%; }
+  .mb-item.small { width: 56%; }
+  .mb-note { margin-block: 32px 56px; }
   :root { --content-x: 16px; }
   .row, .row.one { grid-template-columns: 1fr; gap: 24px; }
   .rows { gap: 24px; }
@@ -224,8 +259,10 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --intro-speed: .01s; }
-  .reveal, .lockup, .lockup > div, .splash .hint, .link .line, .sub { transition: none !important; animation: none !important; }
+  .reveal, .lockup, .lockup > div, .splash .hint, .link .line, .sub, .mb-story, .rv { transition: none !important; animation: none !important; }
   .item.pre .reveal { opacity: 1; transform: none; }
+  .mb-story { opacity: 1; }
+  .rv.pre { opacity: 1; transform: none; }
 }
 </style>
 </head>
@@ -309,14 +346,56 @@ const PROJECTS = [
     protoImgs: [{ c: "#a5857c", r: "4/3" }, { c: "#ecdcd6", r: "4/5" }]
   },
   {
-    slug: "truth-machine", code: "P.05", title: "Truth Machine", year: "2026",
-    type: "Interactive piece", tools: "Arduino, ultrasonic sensor, p5.js",
-    summary: "Place your hand on the platform and answer a yes or no question. The machine delivers a verdict, truth or false, and it is entirely random. A small piece about how much authority we hand to machines.",
-    process: "An ultrasonic sensor detects the hand on the platform and starts the ritual. The pacing of the question and the pause before the verdict carry the drama.",
-    prototype: "Arduino and an ultrasonic sensor feed a p5.js interface that asks and judges.",
-    cover: { c: "#2b2b2a", r: "4/5" },
-    processImgs: [{ c: "#7c7b78", r: "4/3" }, { c: "#c4c2bd", r: "4/5" }, { c: "#4a4947", r: "3/4" }, { c: "#a19f9a", r: "1/1" }],
-    protoImgs: [{ c: "#161615", r: "4/5" }, { c: "#8e8c88", r: "4/3" }]
+    /* Moodboard layout: images scatter across the page and drift into place as you scroll
+       (after songforthemute.com/collaborations/birk-x-sftm-chapter). The description sits
+       between imagesBefore and imagesAfter.
+       Each image: { c: placeholder color, r: aspect ratio, size: "small" | "medium" | "large",
+                     src: "images/xyz.jpg" (or .mp4 for a looping video), cap: "caption under the image" } */
+    slug: "geographical-systems-design", code: "P.05", title: "Geographical Systems Design", year: "",
+    type: "Systems design, Northrop Grumman", tools: "QGIS, Python, MATLAB",
+    layout: "moodboard",
+    subs: [{ label: "All" }, { label: "Overview", sec: "overview" }, { label: "Process", sec: "process" }],
+    cover: { c: "#1f3b4d", r: "4/5" },
+    note: "*Due to clearance issues, specific details of this project have been left out. This project was part of a Special Access Program supporting highly classified National Security objectives, making precision and security very important throughout the process.",
+    overview: [
+      "Leading the redesign of a huge scale communication system infrastructure, the team’s job was to upgrade the outdated communication network to meet today’s technological standards."
+    ],
+    process: [
+      "Beginning by carefully analyzing legacy control documents, it included the details of the original system’s requirements. From there, we collaborated with the system design and requirements team to integrate new physical and logical connectivity requirements.",
+      "Primarily using QGIS (Quantum Geographic Information System), we ensured the new system met both legacy and modern technological requirements.",
+      "We used QGIS to map the network layout, optimizing the placement of stations and centers based on the distances that would minimize latency and maximize system efficiency. This step required considering not only the technological aspects but also the geographical landscape and the specific behavior of communication technologies. The layout evolved through multiple iterations, driven by feedback from systems engineers with expertise in communications, network infrastructure, software, and requirements management.",
+      "To verify that the design would meet both physical and logical specifications, I utilized Python scripts within QGIS to collect and analyze data points from the proposed infrastructure. This allowed us to assess the network's functionality in real-world conditions.",
+      "In addition to the systems layout design, I conducted extensive research into higher-performance communication technologies, evaluating trade-offs between single-mode and multi-mode fiber optic cables. Understanding the behavior of these technologies at various data rates was critical in meeting the required performance standards. These new technologies were also tested and validated in classified labs to ensure the design would deliver the optimal balance of speed and reliability.",
+      "To test and verify both physical and logical requirements together, we used MATLAB to perform a logical resiliency analysis of the cable layout. This analysis ensured that the network design would not only function efficiently under normal conditions but also withstand potential failures without compromising system integrity.",
+      "We were able to gain invaluable insights into how to approach complex system design within real-world constraints. The continuous discussions with engineers across multiple disciplines especially taught me how to prioritize features and make informed decisions about what to adjust or sacrifice in the design. With so many different perspectives and objectives at play, making confident engineering decisions was often challenging, but it was crucial to keep the project moving forward.",
+      "I was unable to see the end of this project as it is still ongoing and one of the biggest projects at Northrop Grumman."
+    ],
+    imagesBefore: [
+      { c: "#1f3b4d", r: "4/5", size: "medium", cap: "Caption" },
+      { c: "#e2532d", r: "3/4", size: "medium", cap: "Caption" },
+      { c: "#c9d3c0", r: "1/1", size: "medium", cap: "Caption" },
+      { c: "#0e1a22", r: "4/5", size: "small", cap: "Caption" },
+      { c: "#7d9a6b", r: "4/3", size: "medium", cap: "Caption" },
+      { c: "#f0c419", r: "3/4", size: "small", cap: "Caption" },
+      { c: "#3c6e91", r: "4/5", size: "medium", cap: "Caption" },
+      { c: "#b9b4aa", r: "3/4", size: "medium", cap: "Caption" },
+      { c: "#16324a", r: "4/3", size: "large", cap: "Caption" },
+      { c: "#d8d2c4", r: "4/5", size: "small", cap: "Caption" },
+      { c: "#a8432a", r: "1/1", size: "medium", cap: "Caption" },
+      { c: "#5f7f86", r: "4/5", size: "medium", cap: "Caption" }
+    ],
+    imagesAfter: [
+      { c: "#e2532d", r: "4/5", size: "small", cap: "Caption" },
+      { c: "#26465c", r: "3/4", size: "small", cap: "Caption" },
+      { c: "#c9d3c0", r: "4/5", size: "medium", cap: "Caption" },
+      { c: "#0e1a22", r: "4/3", size: "medium", cap: "Caption" },
+      { c: "#f0c419", r: "1/1", size: "small", cap: "Caption" },
+      { c: "#7d9a6b", r: "3/4", size: "medium", cap: "Caption" },
+      { c: "#1f3b4d", r: "4/3", size: "large", cap: "Caption" },
+      { c: "#b9b4aa", r: "4/5", size: "small", cap: "Caption" },
+      { c: "#3c6e91", r: "3/4", size: "medium", cap: "Caption" },
+      { c: "#a8432a", r: "4/5", size: "medium", cap: "Caption" }
+    ]
   },
   {
     slug: "memory-orb", code: "P.06", title: "Memory Orb", year: "2026",
@@ -347,11 +426,11 @@ const fullName = `${SITE.first} ${SITE.last}`;
 
 /* ---------- menu ---------- */
 const MENU = [
-  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug, subs: [
-    { label: "All", href: "#" + p.slug },
-    { label: "Process", href: "#" + p.slug, sec: "process" },
-    { label: "Prototype", href: "#" + p.slug, sec: "prototype" }
-  ] })),
+  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug, subs: (p.subs || [
+    { label: "All" },
+    { label: "Process", sec: "process" },
+    { label: "Prototype", sec: "prototype" }
+  ]).map((s) => ({ ...s, href: "#" + p.slug })) })),
   { label: "About", href: "#about", subs: [
     { label: "Bio", href: "#about" },
     { label: "Contact", href: "#about", sec: "contact" },
@@ -522,9 +601,65 @@ function renderHome() {
   )}</div>${footer()}`;
 }
 
+
+/* ---------- moodboard layout ---------- */
+/* stable pseudo-random offsets per page, so the collage looks the same on every visit */
+function seeded(str) {
+  let h = 1779033703;
+  for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 3432918353), h = (h << 13) | (h >>> 19);
+  return () => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+function mbItem(img, rand) {
+  const x = Math.round(rand() * 60 - 30), y = Math.round(rand() * 60 - 30);
+  const media = !img.src ? "" : /\.(mp4|webm|mov)$/i.test(img.src)
+    ? `<video src="${esc(img.src)}" autoplay muted loop playsinline></video>`
+    : `<img src="${esc(img.src)}" alt="${esc(img.alt || img.cap || "")}" loading="lazy" draggable="false">`;
+  return `<div class="mb-item ${esc(img.size || "medium")}" style="--x:${x}%;--y:${y}%;--x0:${x + 4}%;--y0:${y + 10}%">
+    <div class="mb-story">
+      <div class="mb-media" style="--c:${img.c};aspect-ratio:${img.r}">${media}</div>
+      ${img.cap ? `<div class="mb-cap">${esc(img.cap)}</div>` : ""}
+    </div></div>`;
+}
+function renderMoodboard(p, next) {
+  const rand = seeded(p.slug);
+  const meta = [["Project", p.code], ["Year", p.year], ["Type", p.type], ["Tools", p.tools]].filter(([, v]) => v);
+  return `
+    <section class="intro slim">
+      <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${esc(p.summary)}</p>` : ""}</div></div>
+    </section>
+    <div class="mb">${p.imagesBefore.map((im) => mbItem(im, rand)).join("")}</div>
+    <section class="mb-note" id="sec-overview">
+      ${p.note ? `<p class="fine rv">${esc(p.note)}</p>` : ""}
+      ${(p.overview || []).map((t) => `<p class="rv">${esc(t)}</p>`).join("")}
+      <div class="sec-label rv" id="sec-process">Process</div>
+      ${(p.process || []).map((t) => `<p class="rv">${esc(t)}</p>`).join("")}
+    </section>
+    <div class="mb">${(p.imagesAfter || []).map((im) => mbItem(im, rand)).join("")}</div>
+    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
+    ${footer()}`;
+}
+/* drag images around with the mouse, like the reference */
+let dragZ = 10;
+document.addEventListener("pointerdown", (e) => {
+  const it = e.target.closest(".mb-item");
+  if (!it || e.pointerType !== "mouse" || e.button !== 0) return;
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY;
+  const bx = +it.dataset.dx || 0, by = +it.dataset.dy || 0;
+  it.classList.add("dragging"); it.style.zIndex = ++dragZ;
+  const move = (ev) => {
+    it.dataset.dx = bx + ev.clientX - sx; it.dataset.dy = by + ev.clientY - sy;
+    it.style.translate = `${it.dataset.dx}px ${it.dataset.dy}px`;
+  };
+  const up = () => { it.classList.remove("dragging"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+  addEventListener("pointermove", move); addEventListener("pointerup", up);
+});
+
 function renderProject(p) {
   const i = PROJECTS.indexOf(p);
   const next = PROJECTS[(i + 1) % PROJECTS.length];
+  if (p.layout === "moodboard") return renderMoodboard(p, next);
   return `
     <section class="intro">
       <dl class="meta">
@@ -569,13 +704,18 @@ function renderAbout() {
 let io;
 function armReveal() {
   if (io) io.disconnect();
-  if (!("IntersectionObserver" in window)) return;
+  if (!("IntersectionObserver" in window)) { document.querySelectorAll("#main .mb-item").forEach((el) => el.classList.add("in")); return; }
   io = new IntersectionObserver((entries) => {
     entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.remove("pre"); io.unobserve(en.target); } });
   }, { rootMargin: "0px 0px -8% 0px" });
-  document.querySelectorAll("#main .item").forEach((el) => {
+  document.querySelectorAll("#main .item, #main .rv").forEach((el) => {
     if (el.getBoundingClientRect().top > innerHeight * 0.92) { el.classList.add("pre"); io.observe(el); }
   });
+  /* moodboard images drift into place as they enter, including the ones already on screen */
+  const mbIo = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); mbIo.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -6% 0px" });
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll("#main .mb-item").forEach((el) => mbIo.observe(el))));
 }
 
 const main = $("#main");
