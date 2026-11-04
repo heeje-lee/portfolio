@@ -8,7 +8,7 @@
 <meta name="description" content="Heeje Lee — design and physical computing portfolio, MDes UC Berkeley.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
 <style>
 /* Layout: fixed mono menu tree along the top, staggered two-up image rows on the right,
    full-bleed splash that slides up on first scroll (after songforthemute.com). */
@@ -227,6 +227,7 @@ main { overflow-x: clip; }
 }
 .mb-note { max-width: 62ch; margin: calc(var(--unit) * 12) auto calc(var(--unit) * 14); font-size: 13px; line-height: 1.7; }
 .mb-note p { margin: 0 0 1em; }
+strong { font-weight: 500; }
 .mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
 .mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
 .rv { transition: transform 1.33s ease, opacity 1s ease; }
@@ -404,6 +405,10 @@ const ABOUT = {
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+/* text formatting in descriptions: **bold** and _italic_ */
+const fmt = (s) => esc(s)
+  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+  .replace(/(^|[\s(“‘"'])_(.+?)_(?=$|[\s.,;:!?)”’"'])/g, "$1<em>$2</em>");
 const fullName = `${SITE.first} ${SITE.last}`;
 
 /* ---------- menu ---------- */
@@ -608,14 +613,14 @@ function renderMoodboard(p, next) {
   return `
     <section class="intro slim">
       <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-      <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${esc(p.summary)}</p>` : ""}</div></div>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
     </section>
     <div class="mb">${p.imagesBefore.map((im) => mbItem(im, rand)).join("")}</div>
     <section class="mb-note" id="sec-overview">
-      ${p.note ? `<p class="fine rv">${esc(p.note)}</p>` : ""}
-      ${(p.overview || []).map((t) => `<p class="rv">${esc(t)}</p>`).join("")}
+      ${p.note ? `<p class="fine rv">${fmt(p.note)}</p>` : ""}
+      ${(p.overview || []).map((t) => `<p class="rv">${fmt(t)}</p>`).join("")}
       <div class="sec-label rv" id="sec-process">Process</div>
-      ${(p.process || []).map((t) => `<p class="rv">${esc(t)}</p>`).join("")}
+      ${(p.process || []).map((t) => `<p class="rv">${fmt(t)}</p>`).join("")}
     </section>
     <div class="mb">${(p.imagesAfter || []).map((im) => mbItem(im, rand)).join("")}</div>
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
@@ -650,14 +655,14 @@ function renderProject(p) {
         <dt>Type</dt><dd>${esc(p.type)}</dd>
         <dt>Tools</dt><dd>${esc(p.tools)}</dd>
       </dl>
-      <div><h1 class="title">${esc(p.title)}</h1><div class="body"><p>${esc(p.summary)}</p></div></div>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body"><p>${fmt(p.summary)}</p></div></div>
     </section>
     <div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>
     <div class="sec-label" id="sec-process">Process</div>
-    <p class="sec-text">${esc(p.process)}</p>
+    <p class="sec-text">${fmt(p.process)}</p>
     <div class="rows">${twoUp(p.processImgs)}</div>
     <div class="sec-label" id="sec-prototype">Prototype</div>
-    <p class="sec-text">${esc(p.prototype)}</p>
+    <p class="sec-text">${fmt(p.prototype)}</p>
     <div class="rows">${twoUp(p.protoImgs)}</div>
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
     ${footer()}`;
@@ -671,7 +676,7 @@ function renderAbout() {
         <dt>Program</dt><dd>MDes, UC Berkeley</dd>
         <dt>Background</dt><dd>Electrical engineering</dd>
       </dl>
-      <div><h1 class="title">About</h1><div class="body">${ABOUT.bio.map((t) => `<p>${esc(t)}</p>`).join("")}</div></div>
+      <div><h1 class="title">About</h1><div class="body">${ABOUT.bio.map((t) => `<p>${fmt(t)}</p>`).join("")}</div></div>
     </section>
     <div class="rows">${twoUp([ABOUT.portrait, ABOUT.studio], ["Portrait", "Studio"])}</div>
     <div class="sec-label" id="sec-contact">Contact</div>
