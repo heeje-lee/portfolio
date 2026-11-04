@@ -230,6 +230,8 @@ main { overflow-x: clip; }
 strong { font-weight: 500; }
 .mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
 .mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
+/* images placed between paragraphs: break out of the narrow text column to the moodboard width */
+.mb.mb-inline { width: 75vw; margin: calc(var(--unit) * 4) 0 calc(var(--unit) * 2) calc(50% - 37.5vw); padding-top: calc(var(--unit) * 4); }
 .rv { transition: transform 1.33s ease, opacity 1s ease; }
 .rv.pre { opacity: 0; transform: translateY(40px); }
 .intro.slim .body:empty { display: none; }
@@ -249,6 +251,7 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
   .mb-item, .mb-item.large { width: 80%; }
   .mb-item.small { width: 56%; }
   .mb-note { margin-block: 32px 56px; }
+  .mb.mb-inline { width: calc(100vw - 2 * var(--content-x)); margin-left: calc(50% - 50vw + var(--content-x)); }
   :root { --content-x: 16px; }
   .row, .row.one { grid-template-columns: 1fr; gap: 24px; }
   .rows { gap: 24px; }
@@ -350,21 +353,31 @@ const PROJECTS = [
     /* Moodboard layout: images scatter across the page and drift into place as you scroll
        (after songforthemute.com/collaborations/birk-x-sftm-chapter). The description sits
        between imagesBefore and imagesAfter.
+       To put images in the middle of the text, drop an image (or [image, image]) into the
+       overview or process list between two paragraphs, e.g.
+         "First paragraph...",
+         [{ src: "images/a.png", r: "4/3", size: "large", cap: "..." }, { src: "images/b.png", r: "1/1" }],
+         "Next paragraph..."
        Each image: { c: placeholder color, r: aspect ratio, size: "small" | "medium" | "large",
                      src: "images/xyz.jpg" (or .mp4 for a looping video), cap: "caption under the image" } */
     slug: "geographical-communications-network-systems-design", title: "Geographical Communications Network Systems Design", year: "2022-2024",
     type: "Systems Design, Test and Verification @ Northrop Grumman", tools: "QGIS, Python, MATLAB, Cameo",
     layout: "moodboard",
     subs: [{ label: "All" }, { label: "Overview", sec: "overview" }, { label: "Process", sec: "process" }],
-    cover: { src: "images/commsnetwork_main.png", r: "1290 × 900", size: "large", cap: "Not accurate display of Communications Network"},
+    cover: { c: "#1f3b4d", r: "4/5" },
     note: "*Due to clearance issues, specific details of this project have been left out. This project was part of a _**Special Access Program**_ supporting highly classified _**National Security**_ objectives, making precision and security very important throughout the process.",
     overview: [
       "Leading the _**redesign**_ of a huge scale _**communication system infrastructure**_, the team’s job was to upgrade the outdated communication network to meet today’s technological standards."
     ],
     process: [
       "Beginning by carefully analyzing _**legacy control documents**_, it included the details of the original system’s requirements. From there, we collaborated with the system design and requirements team to integrate new physical and logical connectivity requirements.",
+      [
+        { src: "images/req_hierarchy_cameo.png", r: "2040/1260", size: "large", cap: "Requirements Hierarchy in Cameo" },
+        { src: "images/act_requirements_cameo.png", r: "2040/2400", size: "medium", cap: "Generic Requirements worked in Cameo" }
+      ],
       "Primarily using _**QGIS**_ (Quantum Geographic Information System), we ensured the new system met both _**legacy**_ and _**modern**_ technological requirements.",
       "We used QGIS to map the network layout, optimizing the placement of stations and centers based on the _**distances**_ that would _**minimize latency**_ and _**maximize system efficiency**_. This step required considering not only the technological aspects but also the geographical landscape and the specific behavior of communication technologies. The layout evolved through multiple iterations, driven by feedback from systems engineers with expertise in communications, network infrastructure, software, and requirements management.",
+      { src: "images/commsnetwork_main.png", r: "1290/900", size: "large", cap: "Generic communication network topology" },
       "To verify that the design would meet both physical and logical specifications, I utilized _**Python scripts**_ within QGIS to collect and analyze data points from the proposed infrastructure. This allowed us to assess the network's _**functionality in real-world conditions**_.",
       "In addition to the _**systems layout design**_, I conducted _**extensive research**_ into higher-performance communication technologies, evaluating trade-offs between _**single-mode and multi-mode fiber optic cables**_. Understanding the behavior of these technologies at various data rates was critical in meeting the required performance standards. These new technologies were also _**tested and validated in classified labs**_ to ensure the design would deliver the optimal balance of speed and reliability.",
       "To test and verify both physical and logical requirements together, we used _**MATLAB**_ to perform a _**logical resiliency analysis**_ of the cable layout. This analysis ensured that the network design would not only function efficiently under normal conditions but also withstand potential failures without compromising system integrity.",
@@ -372,8 +385,6 @@ const PROJECTS = [
       "I was unable to see the end of this project as it is still ongoing and one of the biggest projects at Northrop Grumman."
     ],
     imagesBefore: [
-      { src: "images/act_requirements_cameo.png", r: "2040/2400", size: "medium", cap: "Generic Requirements worked in Cameo" },
-      { src: "images/req_hierarchy_cameo.png", r: "2040/1260", size: "large", cap: "Requirements Hierarchy in Cameo" },
       { c: "#c9d3c0", r: "1/1", size: "medium", cap: "Caption" },
     ],
     imagesAfter: [
@@ -607,6 +618,13 @@ function mbItem(img, rand) {
       ${img.cap ? `<div class="mb-cap">${esc(img.cap)}</div>` : ""}
     </div></div>`;
 }
+/* a text list can mix paragraphs and images: a string is a paragraph,
+   an image object (or an array of them) becomes an image group in place */
+function blocks(list, rand) {
+  return (list || []).map((b) => typeof b === "string"
+    ? `<p class="rv">${fmt(b)}</p>`
+    : `<div class="mb mb-inline">${[].concat(b).map((im) => mbItem(im, rand)).join("")}</div>`).join("");
+}
 function renderMoodboard(p, next) {
   const rand = seeded(p.slug);
   const meta = [["Project", p.code], ["Year", p.year], ["Type", p.type], ["Tools", p.tools]].filter(([, v]) => v);
@@ -615,12 +633,12 @@ function renderMoodboard(p, next) {
       <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
     </section>
-    <div class="mb">${p.imagesBefore.map((im) => mbItem(im, rand)).join("")}</div>
+    <div class="mb">${(p.imagesBefore || []).map((im) => mbItem(im, rand)).join("")}</div>
     <section class="mb-note" id="sec-overview">
       ${p.note ? `<p class="fine rv">${fmt(p.note)}</p>` : ""}
-      ${(p.overview || []).map((t) => `<p class="rv">${fmt(t)}</p>`).join("")}
+      ${blocks(p.overview, rand)}
       <div class="sec-label rv" id="sec-process">Process</div>
-      ${(p.process || []).map((t) => `<p class="rv">${fmt(t)}</p>`).join("")}
+      ${blocks(p.process, rand)}
     </section>
     <div class="mb">${(p.imagesAfter || []).map((im) => mbItem(im, rand)).join("")}</div>
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
