@@ -2,410 +2,751 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Heeje Lee — Portfolio</title>
-<meta name="description" content="Heeje Lee, creative technologist. A portfolio laid out like magazines on a living room coffee table.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YIHEEJAY Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Heeje Lee — design and physical computing portfolio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
 <style>
-/* =========================================================
-   Living room portfolio
-   1. Opens on the living room.
-   2. Scrolling zooms into the coffee table, then cross-fades to the
-      top-down view of the table with the magazines (one per project).
-   3. Hover a magazine and it slides out of the stack; click to open.
-   ========================================================= */
+/* Layout: fixed mono menu tree along the top, staggered two-up image rows on the right,
+   full-bleed splash that slides up on first scroll (after songforthemute.com). */
 :root {
-  --ink: #f6eadb;
-  --warm: #ffb46b;
-  --sans: "Inter", system-ui, sans-serif;
-  --serif: "DM Serif Display", Georgia, serif;
-  --ease: cubic-bezier(.22,.8,.24,1);
+  --paper: #ffffff;
+  --ink: #000000;
+  --bar: #000000;
+  --bar-ink: #f4f0eb;
+  --splash: #a9aba6;
+  --on-image: #ffffff;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --unit: 6px;
+  --bar-h: 32px;
+  --menu-h: 40px;
+  --content-x: 24px;
+  --intro-speed: 1.2s;
+  --intro-easing: cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: #1a120c; color: var(--ink); font-family: var(--sans); }
-body { height: 340vh; }              /* scroll distance that drives the zoom */
-body.reading { height: auto; overflow: hidden; }
-a { color: inherit; }
+[hidden] { display: none !important; }
+html, body { background: var(--paper); color: var(--ink); }
+body { font: 12px/1.66 var(--mono); -webkit-font-smoothing: antialiased; }
+html.locked, html.locked body { overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1px dashed currentColor; outline-offset: 3px; }
 
-/* ---------- stage ---------- */
-.stage { position: fixed; inset: 0; overflow: hidden; background: #1a120c; }
-/* a 16:9 box that always covers the screen, so points in the photos stay put */
-.scene {
-  position: absolute; left: 50%; top: 50%;
-  width: max(100vw, 177.78vh); height: max(56.25vw, 100vh);
-  transform: translate(-50%, -50%);
+/* ---------- notification bar ---------- */
+.notify {
+  position: fixed; inset: 0 0 auto; z-index: 6;
+  height: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bar); color: var(--bar-ink);
+  display: flex; align-items: center; justify-content: center;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden;
+  transition: transform .5s ease-in-out;
 }
-.layer { position: absolute; inset: 0; will-change: transform, opacity, filter; }
-.layer img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
-#top { opacity: 0; }
-/* warm vignette over everything */
-.stage::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(20,10,4,.55) 100%);
-}
+.notify a { text-decoration: underline; text-underline-offset: 2px; }
+.notify .x { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); font-size: 18px; line-height: 1; }
+body.bar-closed .notify { transform: translateY(-100%); }
 
-/* ---------- opening text ---------- */
-.hero {
-  position: absolute; left: clamp(20px, 4vw, 56px); bottom: clamp(24px, 6vh, 64px);
-  z-index: 5; pointer-events: none; text-shadow: 0 2px 24px rgba(30,12,0,.55);
+/* ---------- menu: the original tree, turned to run along the top ----------
+   Spine runs across the top; hovering an item grows a line down from it,
+   then its options fade in at the end of that line, stacked downward. */
+.menu {
+  position: fixed; left: 0; right: 0; z-index: 5;
+  top: calc(var(--bar-h) + env(safe-area-inset-top, 0px) + 14px);
+  display: flex; justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  color: var(--ink); pointer-events: none;
+  transition: top .5s ease-in-out, color .6s ease-in-out;
 }
-.hero h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 6vw, 92px); line-height: .95; margin: 0 0 10px; letter-spacing: -.01em; }
-.hero p { margin: 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
-.hint {
-  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 5;
-  font-size: 11px; letter-spacing: .3em; text-transform: uppercase; opacity: .8; pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+body.bar-closed .menu { top: calc(env(safe-area-inset-top, 0px) + 14px); }
+body.splash-visible .menu { color: var(--on-image); }
+.branches { position: relative; padding-left: calc(var(--unit) * 2); pointer-events: auto; }
+.branches::before {
+  content: ""; position: absolute; left: 0; top: .75rem;
+  width: 1px; height: calc(100% - 1.5rem); background: currentColor;
 }
-.hint::after { content: ""; width: 1px; height: 34px; background: currentColor; animation: drip 2.2s var(--ease) infinite; transform-origin: top; }
-@keyframes drip { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+.root {
+  display: flex; flex-wrap: wrap; justify-content: center; column-gap: calc(var(--unit) * 4);
+  padding: calc(var(--unit) * 1.5) 0 0;
+}
+.root::before { top: 0; left: .75rem; width: calc(100% - 1.5rem); height: 1px; }
+.branch { position: relative; }
+.link {
+  display: flex; align-items: center; flex-wrap: nowrap;
+  padding: var(--unit) 0; line-height: 18px;
+  text-transform: uppercase; cursor: pointer;
+}
+.link .label { flex-grow: 0; padding-right: calc(var(--unit) * 2); white-space: pre; transition: opacity .3s; }
+.root > .branch > .link { position: relative; justify-content: center; }
+.root > .branch > .link .label { padding-right: 0; }
+.link .line {
+  display: none; position: absolute; left: 50%; top: 100%;
+  width: 1px; height: calc(var(--unit) * 5); background: currentColor;
+  transform-origin: center top; animation: grow .3s ease-in-out both;
+}
+.branch.active > .link .line { display: block; }
+.root.has-active > .branch.active > .link .label { opacity: .45; }
+.sub {
+  display: none; position: absolute; left: 50%;
+  top: calc(100% + var(--unit) * 5);
+  animation: reveal .5s ease-in-out .3s both;
+}
+.sub .link { padding: calc(var(--unit) / 2) 0; }
+.sub::before { top: 0; height: calc(100% - .75rem); }
+.branch.active > .sub { display: block; }
+.sub .link:hover .label, .root > .branch > .link:hover .label { opacity: .6; }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---------- magazines ---------- */
-/* the magazines sit on the tabletop; the table spans about 97% of the photo's height */
-.table {
-  position: absolute; left: 50%; top: 48.4%;
-  width: 86%; aspect-ratio: 1; transform: translate(-50%, -50%);
-  z-index: 3; pointer-events: none;
+/* ---------- splash ---------- */
+.splash {
+  position: fixed; inset: 0; z-index: 4; height: 100%;
+  background: var(--splash); color: var(--on-image); cursor: pointer;
+  transform: translateY(0%);
+  transition: transform var(--intro-speed) var(--intro-easing);
+  overflow: hidden;
 }
-/* size the table area by the scene's height so it tracks the photo */
-.scene .table { width: auto; height: 92%; }
-.table.live { pointer-events: auto; }
+.splash.out { transform: translateY(-100%); }
+.splash .ph { position: absolute; inset: 0; background: var(--splash); }
+.splash .ph img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 5s; }
+.splash .ph img.loaded { opacity: 1; }
+.lockup {
+  position: absolute; inset: 0; z-index: 2;
+  font-family: var(--sans); font-weight: 700; text-transform: uppercase;
+  letter-spacing: .018em; text-align: center;
+  font-size: clamp(22px, 2.75vw, 52px); line-height: 1;
+  animation: showup 2s ease-in-out 1.5s both;
+}
+.lockup > div { position: absolute; left: 0; right: 0; animation: showup 3s ease-in-out 1.5s both; }
+.lockup .w1 { top: 29%; }
+.lockup .w2 { top: 45%; display: flex; justify-content: center; gap: 8.5vw; }
+.lockup .w2 span:first-child { margin-left: -4vw; }
+.lockup .w3 { top: 67%; font-style: italic; }
+.splash .hint {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  text-align: center; font: 12px/1 var(--mono); text-transform: uppercase;
+  animation: showup 2s ease-in-out 3s both;
+}
+.splash.seen .lockup, .splash.seen .lockup > div, .splash.seen .hint { animation: none; }
+@keyframes showup { from { opacity: 0; } to { opacity: 1; } }
 
-.mag {
-  position: absolute; left: var(--x); top: var(--y); width: 27%;
-  aspect-ratio: 8.5 / 11; container-type: inline-size;
-  transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--r)) scale(var(--s, 1));
-  opacity: var(--in, 0);
-  transition: transform .45s var(--ease), box-shadow .45s var(--ease), filter .45s;
-  box-shadow: 0 1px 1px rgba(0,0,0,.25), 6px 10px 18px rgba(40,18,4,.35);
-  cursor: pointer; outline: none; display: block; text-decoration: none; border-radius: 1px;
+/* ---------- content ---------- */
+main {
+  padding-top: calc(var(--bar-h) + 14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px));
+  padding-left: max(var(--content-x), env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: 0;
+  max-width: 1600px;
+  transition: opacity .35s ease-in-out;
 }
-/* the pages under the cover */
-.mag::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; background: #f3ede2;
-  transform: translate(1.2%, 1%); box-shadow: 1px 1px 0 #d9d0c1, 2px 2px 0 #eee6d8;
+body.bar-closed main { padding-top: calc(14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px)); }
+main.fade { opacity: 0; }
+.rows { display: grid; gap: calc(var(--unit) * 8); }
+.row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+.row.one { grid-template-columns: 1fr; }
+.item {
+  display: block; width: var(--w, 90%); max-width: 100%;
+  justify-self: start; transform: translateY(var(--o, 0%));
 }
-/* soft lamplight sheen from the upper left, matching the photo */
-.mag::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(125deg, rgba(255,214,160,.22), transparent 40%, rgba(30,12,0,.18));
+.item.right { justify-self: end; }
+.reveal { transition: transform 1.33s ease, opacity 1s ease; }
+.item.pre .reveal { opacity: 0; transform: translateY(60px); }
+.ph { position: relative; background: var(--c, #999); overflow: hidden; max-width: 100%; }
+.ph img { display: block; width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.cap {
+  position: absolute; top: 10px; left: 12px; right: 12px; z-index: 1;
+  color: var(--on-image); text-transform: uppercase; line-height: 1.4;
 }
-.table.live .mag:hover, .table.live .mag:focus-visible {
-  --s: 1.05; z-index: 30 !important;
-  transform: translate(calc(var(--dx, 0) + var(--px)), calc(var(--dy, 0) + var(--py))) rotate(calc(var(--r) * .55)) scale(var(--s));
-  box-shadow: 0 2px 2px rgba(0,0,0,.2), 14px 24px 34px rgba(40,18,4,.45);
+a.item .ph::after {
+  content: ""; position: absolute; inset: 0; background: var(--ink); opacity: 0;
+  transition: opacity .4s ease;
 }
-.table.live .mag:focus-visible { outline: 2px solid var(--warm); outline-offset: 4px; }
-.table.live:has(.mag:hover) .mag:not(:hover) { filter: brightness(.82) saturate(.9); }
+a.item:hover .ph::after { opacity: .08; }
 
-/* ---------- covers ---------- */
-.cover { position: absolute; inset: 0; overflow: hidden; background: var(--bg); color: var(--fg); display: flex; flex-direction: column; }
-.mast { line-height: .82; margin: 0; padding: 5cqw 6cqw 0; white-space: nowrap; }
-.issue { display: flex; justify-content: space-between; font: 400 3.4cqw/1 "Space Mono", monospace; letter-spacing: .04em; padding: 2.5cqw 6cqw 0; text-transform: uppercase; opacity: .85; }
-.art { position: relative; flex: 1; margin: 4cqw 6cqw 0; overflow: hidden; }
-.art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.lines { padding: 3cqw 6cqw 5cqw; font: 500 4.2cqw/1.15 var(--sans); display: flex; justify-content: space-between; align-items: end; gap: 4cqw; }
-.lines b { display: block; font-weight: 500; }
-.barcode { flex: 0 0 13cqw; height: 7cqw; background: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 2px, currentColor 2px 4px, transparent 4px 5px, currentColor 5px 6px, transparent 6px 8px); opacity: .8; }
-
-/* 01 fashion */
-.c-fashion .mast { font: italic 900 21cqw/0.8 "Bodoni Moda", serif; letter-spacing: -.03em; text-align: center; padding-top: 6cqw; }
-.c-fashion .mast small { display: block; font-size: .48em; font-style: normal; letter-spacing: .32em; font-weight: 500; margin-top: 2cqw; }
-.c-fashion .art { background:
-  repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 3cqw, transparent 3cqw 6cqw),
-  radial-gradient(circle at 50% 30%, #e24b3b, #7d130c 70%); }
-/* 02 uav */
-.c-uav .mast { font: 400 19cqw/0.86 Anton, sans-serif; letter-spacing: .01em; }
-.c-uav .art { background:
-  linear-gradient(rgba(140,200,255,.14) 1px, transparent 1px) 0 0 / 8cqw 8cqw,
-  linear-gradient(90deg, rgba(140,200,255,.14) 1px, transparent 1px) 0 0 / 8cqw 8cqw,
-  radial-gradient(circle at 50% 45%, #22405c, #0b1520 75%); }
-.c-uav .art svg { position: absolute; inset: 8% 4%; width: 92%; height: 84%; }
-/* 03 geo */
-.c-geo .mast { font: 400 15.5cqw/0.9 var(--serif); letter-spacing: -.02em; }
-.c-geo .mast em { display: block; font-size: .6em; }
-.c-geo .art { background: #fff; border: 1px solid rgba(0,0,0,.25); }
-.c-geo .art img { object-fit: contain; padding: 4cqw; }
-/* 04 sampler */
-.c-sampler .mast { font: 400 20cqw/0.84 "Archivo Black", sans-serif; letter-spacing: -.04em; }
-.c-sampler .art { background: #1c1b1a; border-radius: 2cqw; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr 1.2fr; gap: 4cqw; padding: 6cqw; }
-.knob { border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f3e6d4, #9a8c7a 70%); position: relative; aspect-ratio: 1; align-self: center; justify-self: center; width: 80%; }
-.knob::after { content: ""; position: absolute; left: 50%; top: 8%; width: 6%; height: 34%; background: #1c1b1a; transform-origin: 50% 124%; transform: translateX(-50%) rotate(var(--k)); border-radius: 2px; }
-.pad { background: #e8641f; border-radius: 1.5cqw; box-shadow: inset 0 -1cqw 0 rgba(0,0,0,.25); }
-.pad.off { background: #3a3734; }
-/* 05 alcove */
-.c-alcove .mast { font: italic 400 25cqw/0.8 var(--serif); letter-spacing: -.03em; text-align: center; }
-.c-alcove .art { background: transparent; display: flex; align-items: end; justify-content: center; }
-.arch { width: 66%; height: 92%; border-radius: 50cqw 50cqw 0 0; background: linear-gradient(180deg, #f7c483 0%, #c9733a 55%, #6e3519 100%); box-shadow: inset 0 0 0 2.5cqw #f1e6d3; position: relative; }
-.arch::after { content: ""; position: absolute; left: 34%; bottom: 0; width: 32%; height: 22%; background: #3b2416; border-radius: 30% 30% 0 0; opacity: .85; }
-/* 06 next project */
-.c-next .mast { font: 400 16cqw/0.9 Anton, sans-serif; }
-.c-next .art { border: 1px dashed currentColor; display: grid; place-items: center; font: 400 4cqw/1.3 "Space Mono", monospace; text-align: center; opacity: .8; }
-/* 07 creative */
-.c-creative .mast { font: 400 19cqw/0.82 Anton, sans-serif; letter-spacing: -.01em; }
-.c-creative .mast span:nth-child(1) { color: #e2532d; } .c-creative .mast span:nth-child(2) { color: #1f4fd1; }
-.c-creative .art { background: #efe7d6; }
-.c-creative .art i { position: absolute; display: block; }
-/* 08 about */
-.c-about .mast { font: 700 19cqw/0.85 "Bodoni Moda", serif; letter-spacing: -.02em; text-align: center; padding-top: 6cqw; }
-.c-about .art { background: radial-gradient(ellipse at 50% 40%, #e09a55, #6b3414 75%); }
-.c-about .art::before { content: ""; position: absolute; left: 50%; top: 22%; width: 32%; aspect-ratio: 1; border-radius: 50%; background: rgba(28,14,6,.75); transform: translateX(-50%); }
-.c-about .art::after { content: ""; position: absolute; left: 50%; bottom: -12%; width: 70%; height: 46%; border-radius: 50% 50% 0 0; background: rgba(28,14,6,.75); transform: translateX(-50%); }
-
-/* ---------- caption under the table ---------- */
-.label {
-  position: fixed; left: 50%; bottom: 22px; z-index: 6; transform: translate(-50%, 8px);
-  font: 400 12px/1 "Space Mono", monospace; letter-spacing: .08em; text-transform: uppercase;
-  background: rgba(26,16,9,.72); backdrop-filter: blur(6px); padding: 10px 14px; border-radius: 999px;
-  opacity: 0; transition: opacity .3s, transform .3s var(--ease); pointer-events: none; white-space: nowrap;
+/* project + about pages */
+.intro {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: calc(var(--unit) * 6); padding-block: 15vh 10vh; align-items: end;
 }
-.label.on { opacity: 1; transform: translate(-50%, 0); }
-.label .no { color: var(--warm); margin-right: 10px; }
-
-/* ---------- placeholder issue page (each project gets its own design later) ---------- */
-.reader {
-  position: fixed; inset: 0; z-index: 20; background: #f3ede2; color: #1b1410;
-  display: grid; place-items: center; text-align: center; padding: 24px;
-  opacity: 0; visibility: hidden; transition: opacity .5s, visibility .5s;
+.title {
+  font-family: var(--sans); font-weight: 700; font-style: italic; text-transform: uppercase;
+  font-size: clamp(28px, 3.6vw, 60px); line-height: 1; letter-spacing: .01em;
+  margin: 0 0 calc(var(--unit) * 4); text-wrap: balance;
 }
-.reader.open { opacity: 1; visibility: visible; }
-.reader .no { font: 400 12px "Space Mono", monospace; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
-.reader h2 { font: 400 clamp(36px, 7vw, 96px)/1 var(--serif); margin: 14px 0 22px; }
-.reader button { font: 400 12px "Space Mono", monospace; letter-spacing: .1em; text-transform: uppercase; background: none; border: 1px solid currentColor; border-radius: 999px; padding: 10px 16px; cursor: pointer; color: inherit; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 18px; text-transform: uppercase; margin: 0; }
+.meta dt { opacity: .5; }
+.meta dd { margin: 0; }
+.body { max-width: 56ch; margin: 0; font-size: 13px; line-height: 1.7; }
+.body p { margin: 0 0 1em; }
+.sec-label {
+  display: flex; align-items: center; gap: 12px; text-transform: uppercase;
+  padding-block: 12vh 18px;
+}
+.sec-label::after { content: ""; flex: 0 0 9rem; height: 1px; background: currentColor; }
+.sec-text { max-width: 56ch; margin: 0 0 calc(var(--unit) * 6); font-size: 13px; line-height: 1.7; }
+.next {
+  display: flex; align-items: center; gap: 12px; text-transform: uppercase;
+  padding-block: 16vh 0;
+}
+.next .line { flex: 0 0 4rem; height: 1px; background: currentColor; transition: flex-basis .4s ease; }
+.next:hover .line { flex-basis: 8rem; }
+.contact-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; text-transform: uppercase; }
+.contact-list .sel { user-select: all; text-transform: none; }
+.copy { text-decoration: underline; text-underline-offset: 2px; margin-left: 8px; text-transform: uppercase; }
 
-/* ---------- phones: the table fills the width, magazines in a taller fan ---------- */
-@media (max-aspect-ratio: 4/5) {
-  .scene .table { height: auto; width: 100vw; aspect-ratio: 9 / 16; max-height: 100vh; }
-  .mag { width: 40%; }
-  .hero h1 { font-size: 44px; }
+/* ---------- moodboard project layout (scattered, drifting images) ---------- */
+main { overflow-x: clip; }
+.mb {
+  width: 75%; margin: 0 auto; padding-top: calc(var(--unit) * 8);
+  display: flex; flex-wrap: wrap; justify-content: space-evenly; align-items: center;
+  --k: 1;
+}
+.mb-item { position: relative; z-index: 1; width: 25%; margin-bottom: calc(var(--unit) * 8); touch-action: pan-y; }
+.mb-item:nth-child(2n) { margin-left: auto; margin-right: 0; }
+.mb-item.small { width: 16.666%; }
+.mb-item.large { width: 41.666%; }
+.mb-story {
+  transform: translate(calc(var(--x0) * var(--k)), calc(var(--y0) * var(--k)));
+  opacity: 0; transition: transform 1.33s, opacity 1s;
+}
+.mb-item.in .mb-story { transform: translate(calc(var(--x) * var(--k)), calc(var(--y) * var(--k))); opacity: 1; }
+.mb-media { position: relative; overflow: hidden; background: var(--c, #999); }
+.mb-media img, .mb-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; }
+.mb-cap { margin-top: 6px; font-size: 10px; line-height: 1.4; }
+@media (hover: hover) {
+  .mb-item { cursor: grab; }
+  .mb-item.dragging { cursor: grabbing; }
+}
+.mb-note { max-width: 62ch; margin: calc(var(--unit) * 12) auto calc(var(--unit) * 14); font-size: 13px; line-height: 1.7; }
+.mb-note p { margin: 0 0 1em; }
+strong { font-weight: 500; }
+.mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
+.mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
+/* images placed between paragraphs: break out of the narrow text column to the moodboard width */
+.mb.mb-inline { width: 75vw; margin: calc(var(--unit) * 4) 0 calc(var(--unit) * 2) calc(50% - 37.5vw); padding-top: calc(var(--unit) * 4); }
+.rv { transition: transform 1.33s ease, opacity 1s ease; }
+.rv.pre { opacity: 0; transform: translateY(40px); }
+.intro.slim .body:empty { display: none; }
+
+footer.foot {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
+  padding-block: 18vh 48px; align-items: end;
+}
+footer.foot .slash { font-family: var(--sans); font-weight: 700; font-size: 40px; line-height: 1; }
+footer.foot p { margin: 0 0 12px; max-width: 56ch; }
+footer.foot nav { display: flex; gap: 18px; text-transform: uppercase; flex-wrap: wrap; }
+footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 860px) {
+  .mb { width: 100%; --k: .35; }
+  .mb-item, .mb-item.large { width: 80%; }
+  .mb-item.small { width: 56%; }
+  .mb-note { margin-block: 32px 56px; }
+  .mb.mb-inline { width: calc(100vw - 2 * var(--content-x)); margin-left: calc(50% - 50vw + var(--content-x)); }
+  :root { --content-x: 16px; }
+  .row, .row.one { grid-template-columns: 1fr; gap: 24px; }
+  .rows { gap: 24px; }
+  .item, .item.right { width: 100%; transform: none; justify-self: stretch; }
+  .intro, footer.foot { grid-template-columns: 1fr; padding-block: 48px 32px; gap: 24px; }
+  .sec-label { padding-block: 56px 16px; }
+  .lockup { font-size: clamp(22px, 7vw, 40px); }
+  .lockup .w2 { gap: 9vw; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mag, .label { transition: none; }
-  .hint::after { animation: none; }
+  :root { --intro-speed: .01s; }
+  .reveal, .lockup, .lockup > div, .splash .hint, .link .line, .sub, .mb-story, .rv { transition: none !important; animation: none !important; }
+  .item.pre .reveal { opacity: 1; transform: none; }
+  .mb-story { opacity: 1; }
+  .rv.pre { opacity: 1; transform: none; }
 }
 </style>
 </head>
 <body>
 
-<div class="stage" id="stage">
-  <div class="scene">
-    <!-- To swap in your own room later: replace images/livingroom.jpg (or put a 3D LiDAR viewer in this layer)
-         and update ROOM.focus below to the table's position in the new picture. -->
-    <div class="layer" id="room"><img src="images/livingroom.jpg" alt="A warm, lamp-lit living room at dusk with a round white coffee table and a stack of magazines"></div>
-    <div class="layer" id="top"><img src="images/tabletop.jpg" alt=""></div>
-    <nav class="table" id="table" aria-label="Projects"></nav>
-  </div>
-  <div class="hero" id="hero">
-    <h1>Heeje Lee</h1>
-    <p>Creative technologist · Portfolio 2026</p>
-  </div>
-  <div class="hint" id="hint">Scroll</div>
+<div class="notify" id="notify">
+  <span><span id="barText"></span> <a href="#about">VIEW ABOUT</a></span>
+  <button class="x" id="barClose" aria-label="Close notice">×</button>
 </div>
 
-<div class="label" id="label" aria-hidden="true"><span class="no"></span><span class="t"></span></div>
+<nav class="menu" id="menu" aria-label="Projects"><div class="branches root" id="tree"></div></nav>
 
-<section class="reader" id="reader" aria-live="polite">
-  <div><div class="no" id="rNo"></div><h2 id="rTitle"></h2><button id="rBack" type="button">← Back to the table</button></div>
+<section class="splash" id="splash" aria-label="Intro">
+  <div class="ph" id="splashPh"></div>
+  <div class="lockup" id="lockup"></div>
+  <div class="hint">Scroll</div>
 </section>
+
+<main id="main"></main>
 
 <script>
 /* =========================================================
-   EDIT HERE
-   Each magazine: slug (its link), no, title, the cover style, and optional `img`
-   to drop a real image into the cover's picture area (e.g. img: "images/fastfashion.jpg").
-   x / y place the magazine on the table (percent of the table area), r is its rotation.
-   The `phone` values are used on tall, narrow screens.
+   EDIT YOUR CONTENT HERE
+   Every image is { c: placeholder color, r: aspect ratio, src: optional image path }.
+   Put real photos in an /images folder next to index.html and set src: "images/xyz.jpg".
    ========================================================= */
-const ROOM = {
-  focus: { x: 49.5, y: 66 },   // where the coffee table is in livingroom.jpg (percent)
-  zoom: 3.3                     // how far the camera pushes in before switching to the top view
+const SITE = {
+  first: "HEEJE",
+  last: "LEE",
+  tagline: "Creative Technologist",
+  bar: "Portfolio 2026 ",
+  splash: { c: "#a9aba6", src: "" },
+  email: "heeje.lee@berkeley.edu",
+  links: [
+    { label: "GitHub", href: "https://github.com/heeje-lee" },
+    { label: "Instagram", href: "https://instagram.com/" },
+    { label: "LinkedIn", href: "https://linkedin.com/" }
+  ],
+  blurb: "Heeje Lee. Designer and prototyper working between electrical engineering and interaction design. Objects that listen, react and remember."
 };
 
-const MAGS = [
-  { slug: "fast-fashion", no: "01", title: "Fast-Fashion", style: "fashion",
-    x: 8,  y: 10, r: -9, phone: { x: 4,  y: 2,  r: -6 } },
-  { slug: "globalhawk", no: "02", title: "GlobalHawk UAV Systems Design and Integration", style: "uav",
-    x: 27, y: 5,  r: -3, phone: { x: 54, y: 0,  r: 5 } },
-  { slug: "geographical-communication-systems", no: "03", title: "Geographical Communication Systems Design", style: "geo",
-    img: "images/commsnetwork_main.png",
-    x: 46, y: 8,  r: 5,  phone: { x: 6,  y: 22, r: 4 } },
-  { slug: "analog-sampler", no: "04", title: "Analog Sampler", style: "sampler",
-    x: 64, y: 14, r: 10, phone: { x: 52, y: 23, r: -5 } },
-  { slug: "alcove", no: "05", title: "Alcove", style: "alcove",
-    x: 7,  y: 44, r: 6,  phone: { x: 3,  y: 45, r: -3 } },
-  { slug: "project-06", no: "06", title: "Project 06", style: "next",
-    x: 26, y: 47, r: -5, phone: { x: 56, y: 46, r: 6 } },
-  { slug: "creative-works", no: "07", title: "Creative Works", style: "creative",
-    x: 45, y: 44, r: 3,  phone: { x: 6,  y: 68, r: 5 } },
-  { slug: "about", no: "08", title: "About Me", style: "about",
-    x: 63, y: 48, r: -8, phone: { x: 53, y: 69, r: -4 } }
+const PROJECTS = [
+  {
+    slug: "fast-fashion", title: "fast-fashion", year: "2023",
+    type: "Art + Tech Exhibition", tools: "TouchDesigner, P5.js, MadMapper",
+    summary: "Art+Tech exhibition highlighting how important brand storytelling is in the midst of fast-fashion trends",
+    process: "Process.",
+    cover: { c: "#3f3b37", r: "4/5" },
+    processImgs: [{ c: "#b8b1a6", r: "4/5" }, { c: "#6d685f", r: "4/3" }, { c: "#8f8a82", r: "3/4" }, { c: "#d3cec4", r: "1/1" }],
+    protoImgs: [{ c: "#2e2c29", r: "4/3" }, { c: "#a39686", r: "4/5" }]
+  },
+  {
+    slug: "GlobalHawk UAV", title: "UAV Systems Design & Integration", year: "2024-2026",
+    type: "Professional Working Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
+    summary: "Worked on the upgrade and redesign of the intricate Systems of the legacy GlobalHawk Unmanned Aerial Vehicle directed by Northrop Grumman.",
+    process: "...can't say",
+    cover: { c: "#4b5462", r: "3/4" },
+    processImgs: [{ c: "#8a96a3", r: "4/3" }, { c: "#2f3640", r: "4/5" }, { c: "#c3c9cf", r: "1/1" }, { c: "#5d6b78", r: "3/4" }],
+    protoImgs: [{ c: "#1f242b", r: "4/5" }, { c: "#9aa4ae", r: "4/3" }]
+  },
+  {
+    slug: "", title: "Collective Metabolism Space", year: "2026",
+    type: "Tangible interface, team project", tools: "Spatial installation, sensors, actuation",
+    summary: "A room treated as a living body. It breathes, exhales, sweats and smells in response to the people inside it, so a crowd can feel its own presence as a shared metabolism.",
+    process: "Built for a tangible user interface course. We mapped bodily processes to room-scale outputs and tested which ones people noticed without being told.",
+    prototype: "A room-scale prototype with breathing surfaces and environmental responses.",
+    cover: { c: "#7a7f6c", r: "4/5" },
+    processImgs: [{ c: "#babfa9", r: "3/4" }, { c: "#545a49", r: "4/3" }, { c: "#9ca08b", r: "4/5" }, { c: "#353829", r: "1/1" }],
+    protoImgs: [{ c: "#c9ccbd", r: "4/3" }, { c: "#62674f", r: "4/5" }]
+  },
+  {
+    slug: "beauty-is-pain", code: "P.04", title: "Beauty is Pain", year: "2026",
+    type: "Interactive piece", tools: "Arduino, force sensor, p5.js, webcam",
+    summary: "Press down and your face gets smooshed. Let go and a beautify filter snaps it back to perfect. A force sensor turns the effort behind beauty standards into something you can feel in your hand.",
+    process: "The force sensing resistor reading drives a live distortion of the webcam image. Release is the trigger, so relief and the filter arrive at the same moment.",
+    prototype: "Arduino reads the sensor and streams it to a p5.js sketch running the camera effects.",
+    cover: { c: "#b79a92", r: "3/4" },
+    processImgs: [{ c: "#e0cfc9", r: "4/5" }, { c: "#8c6d66", r: "4/3" }, { c: "#cdb3ab", r: "1/1" }, { c: "#5e4642", r: "3/4" }],
+    protoImgs: [{ c: "#a5857c", r: "4/3" }, { c: "#ecdcd6", r: "4/5" }]
+  },
+  {
+    /* Moodboard layout: images scatter across the page and drift into place as you scroll
+       (after songforthemute.com/collaborations/birk-x-sftm-chapter). The description sits
+       between imagesBefore and imagesAfter.
+       To put images in the middle of the text, drop an image (or [image, image]) into the
+       overview or process list between two paragraphs, e.g.
+         "First paragraph...",
+         [{ src: "images/a.png", r: "4/3", size: "large", cap: "..." }, { src: "images/b.png", r: "1/1" }],
+         "Next paragraph..."
+       Each image: { c: placeholder color, r: aspect ratio, size: "small" | "medium" | "large",
+                     src: "images/xyz.jpg" (or .mp4 for a looping video), cap: "caption under the image" } */
+    slug: "geographical-communications-network-systems-design", title: "Geographical Communications Network Systems Design", year: "2022-2024",
+    type: "Systems Design, Test and Verification @ Northrop Grumman", tools: "QGIS, Python, MATLAB, Cameo",
+    layout: "moodboard",
+    subs: [{ label: "All" }, { label: "Overview", sec: "overview" }, { label: "Process", sec: "process" }],
+    cover: { src: "images/commsnetwork_main.png", r: "1290/900", size: "large", cap: "Generic communication network topology" },
+    note: "*Due to clearance issues, specific details of this project have been left out. This project was part of a _**Special Access Program**_ supporting highly classified _**National Security**_ objectives, making precision and security very important throughout the process.",
+    overview: [
+      "Leading the _**redesign**_ of a huge scale _**communication system infrastructure**_, the team’s job was to upgrade the outdated communication network to meet today’s technological standards."
+    ],
+    process: [
+      "Beginning by carefully analyzing _**legacy control documents**_, it included the details of the original system’s requirements. From there, we collaborated with the system design and requirements team to integrate new physical and logical connectivity requirements.",
+      [
+        { src: "images/req_hierarchy_cameo.png", r: "2040/1260", size: "large", cap: "Requirements Hierarchy in Cameo" },
+        { src: "images/act_requirements_cameo.png", r: "2040/2400", size: "medium", cap: "Generic Requirements worked in Cameo" }
+      ],
+      "Primarily using _**QGIS**_ (Quantum Geographic Information System), we ensured the new system met both _**legacy**_ and _**modern**_ technological requirements.",
+      "We used QGIS to map the network layout, optimizing the placement of stations and centers based on the _**distances**_ that would _**minimize latency**_ and _**maximize system efficiency**_. This step required considering not only the technological aspects but also the geographical landscape and the specific behavior of communication technologies. The layout evolved through multiple iterations, driven by feedback from systems engineers with expertise in communications, network infrastructure, software, and requirements management.",
+      { src: "images/commsnetwork_main.png", r: "1290/900", size: "large", cap: "Generic communication network topology" },
+      "To verify that the design would meet both physical and logical specifications, I utilized _**Python scripts**_ within QGIS to collect and analyze data points from the proposed infrastructure. This allowed us to assess the network's _**functionality in real-world conditions**_.",
+      "In addition to the _**systems layout design**_, I conducted _**extensive research**_ into higher-performance communication technologies, evaluating trade-offs between _**single-mode and multi-mode fiber optic cables**_. Understanding the behavior of these technologies at various data rates was critical in meeting the required performance standards. These new technologies were also _**tested and validated in classified labs**_ to ensure the design would deliver the optimal balance of speed and reliability.",
+      "To test and verify both physical and logical requirements together, we used _**MATLAB**_ to perform a _**logical resiliency analysis**_ of the cable layout. This analysis ensured that the network design would not only function efficiently under normal conditions but also withstand potential failures without compromising system integrity.",
+      "We were able to gain invaluable insights into how to approach complex system design within real-world constraints. The continuous discussions with engineers across multiple disciplines especially taught me how to _**prioritize features**_ and make _**informed decisions**_ about what to adjust or sacrifice in the design. With so many different perspectives and objectives at play, making confident engineering decisions was often challenging, but it was crucial to keep the project moving forward.",
+      "I was unable to see the end of this project as it is still ongoing and one of the biggest projects at Northrop Grumman."
+    ],
+    imagesBefore: [
+      /*{ c: "#c9d3c0", r: "1/1", size: "medium", cap: "Caption" },*/
+    ],
+    imagesAfter: [
+    /*  { c: "#e2532d", r: "4/5", size: "small", cap: "Caption" },*/
+    ]
+  },
+  {
+    slug: "memory-orb", code: "P.06", title: "Memory Orb", year: "2026",
+    type: "Design concept", tools: "Sketching, form studies",
+    summary: "A handheld orb for recording a memory as it happens. It sits in the palm like a keepsake and asks how capturing a moment could feel closer to holding it than filming it.",
+    process: "The concept grew out of how-might-we framing around memory and music, then moved through sketches and form studies of something small enough to always carry.",
+    prototype: "Form models exploring scale, grip and how the orb signals that it is recording.",
+    cover: { c: "#c9c2b3", r: "3/4" },
+    processImgs: [{ c: "#8f8676", r: "4/5" }, { c: "#e3ded3", r: "4/3" }, { c: "#a99f8d", r: "3/4" }, { c: "#5f5749", r: "1/1" }],
+    protoImgs: [{ c: "#d8d1c2", r: "4/3" }, { c: "#776e5f", r: "4/5" }]
+  }
 ];
+
+const ABOUT = {
+  slug: "about",
+  portrait: { c: "#8b8d88", r: "4/5" },
+  studio: { c: "#cfd0cb", r: "4/3" },
+  bio: [
+    "I am a graduate student in the Master of Design program at UC Berkeley, with a background in electrical engineering.",
+    "I build interactive objects and installations with microcontrollers, sensors and code, and use them to ask how technology could feel more bodily, ambient and personal."
+  ]
+};
 /* ========================================================= */
 
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const art = (m, inner = "") => `<div class="art">${m.img ? `<img src="${esc(m.img)}" alt="" loading="lazy">` : inner}</div>`;
-const foot = (a, b) => `<div class="lines"><div><b>${a}</b>${b}</div><span class="barcode"></span></div>`;
-const issue = (m, right) => `<div class="issue"><span>No. ${m.no}</span><span>${right}</span></div>`;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+/* text formatting in descriptions: **bold** and _italic_ */
+const fmt = (s) => esc(s)
+  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+  .replace(/(^|[\s(“‘"'])_(.+?)_(?=$|[\s.,;:!?)”’"'])/g, "$1<em>$2</em>");
+const fullName = `${SITE.first} ${SITE.last}`;
 
-const COVERS = {
-  fashion: (m) => `<div class="cover c-fashion" style="--bg:#b3261e;--fg:#fbefe4">
-      <h3 class="mast">Fast<small>FASHION</small></h3>${issue(m, "2026")}
-      ${art(m, `<svg viewBox="0 0 100 100" style="position:absolute;inset:18% 14%;width:72%;height:64%" fill="none" stroke="#fbefe4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M50 22a7 7 0 1 1 7 7c-4 0-7 2-7 6v3"/><path d="M50 38 12 66c-4 3-2 8 3 8h70c5 0 7-5 3-8L50 38z"/></svg>`)}
-      ${foot("The true cost", "of a five-dollar tee")}</div>`,
-  uav: (m) => `<div class="cover c-uav" style="--bg:#0e1824;--fg:#e8f1fb">
-      <h3 class="mast">GLOBAL<br>HAWK</h3>${issue(m, "UAV Systems")}
-      ${art(m, `<svg viewBox="0 0 200 120" fill="#cfe3f5"><path d="M100 8c5 0 8 6 8 14v26l86 10v6l-86-2v30l18 10v5l-26-4-26 4v-5l18-10V62l-86 2v-6l86-10V22c0-8 3-14 8-14z"/></svg>`)}
-      ${foot("Design &amp; integration", "at 60,000 ft")}</div>`,
-  geo: (m) => `<div class="cover c-geo" style="--bg:#f1ebdd;--fg:#1d1a16">
-      <h3 class="mast">Geographic<em>Comms</em></h3>${issue(m, "Systems Design")}
-      ${art(m)}${foot("Mapping a network", "tower by tower")}</div>`,
-  sampler: (m) => `<div class="cover c-sampler" style="--bg:#e8641f;--fg:#1c1b1a">
-      <h3 class="mast">ANALOG<br>SAMPLER</h3>${issue(m, "Sound")}
-      ${art(m, `${[-40, 20, 110, 60, -100, 0].map((k) => `<span class="knob" style="--k:${k}deg"></span>`).join("")}<span class="pad"></span><span class="pad off"></span><span class="pad"></span>`)}
-      ${foot("Hands on", "every sound")}</div>`,
-  alcove: (m) => `<div class="cover c-alcove" style="--bg:#ece0cb;--fg:#3b2416">
-      <h3 class="mast">alcove</h3>${issue(m, "Space")}
-      ${art(m, `<div class="arch"></div>`)}${foot("A corner", "to belong to")}</div>`,
-  next: (m) => `<div class="cover c-next" style="--bg:#26332a;--fg:#e9e3d2">
-      <h3 class="mast">PROJECT<br>SIX</h3>${issue(m, "Soon")}
-      ${art(m, `<span>Next issue<br>in print soon</span>`)}${foot("Coming", "soon")}</div>`,
-  creative: (m) => `<div class="cover c-creative" style="--bg:#f6f1e7;--fg:#1d1a16">
-      <h3 class="mast"><span>CREATIVE</span><br><span>WORKS</span></h3>${issue(m, "Art")}
-      ${art(m, `<i style="left:8%;top:12%;width:38%;aspect-ratio:1;border-radius:50%;background:#e2532d"></i>
-        <i style="right:10%;top:8%;width:30%;height:44%;background:#1f4fd1"></i>
-        <i style="left:30%;bottom:10%;width:46%;height:22%;background:#f2b630;transform:rotate(-8deg)"></i>
-        <i style="right:16%;bottom:28%;width:16%;aspect-ratio:1;border-radius:50%;background:#1d1a16"></i>`)}
-      ${foot("Sketches, objects", "&amp; experiments")}</div>`,
-  about: (m) => `<div class="cover c-about" style="--bg:#191512;--fg:#f4e8d8">
-      <h3 class="mast">HEEJE<br>LEE</h3>${issue(m, "About Me")}
-      ${art(m)}${foot("The designer issue", "engineer turned maker")}</div>`
-};
+/* ---------- menu ---------- */
+const MENU = [
+  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug, subs: (p.subs || [
+    { label: "All" },
+    { label: "Process", sec: "process" },
+    { label: "Prototype", sec: "prototype" }
+  ]).map((s) => ({ ...s, href: "#" + p.slug })) })),
+  { label: "About", href: "#about", subs: [
+    { label: "Bio", href: "#about" },
+    { label: "Contact", href: "#about", sec: "contact" },
+    ...SITE.links.slice(0, 1).map((l) => ({ label: l.label, href: l.href, ext: true }))
+  ] }
+];
 
-/* ---------- build the magazines ---------- */
-const table = document.getElementById("table");
-const phone = matchMedia("(max-aspect-ratio: 4/5)");
-function place() {
-  [...table.children].forEach((el, i) => {
-    const m = MAGS[i], p = phone.matches && m.phone ? m.phone : m;
-    el.style.setProperty("--x", p.x + "%");
-    el.style.setProperty("--y", p.y + "%");
-    el.style.setProperty("--r", p.r + "deg");
-    /* on hover, slide out away from the middle of the table */
-    const ang = Math.atan2(p.y + 20 - 50, p.x + 13 - 50);
-    el.style.setProperty("--px", (Math.cos(ang) * 4).toFixed(1) + "%");
-    el.style.setProperty("--py", (Math.sin(ang) * 4 - 3).toFixed(1) + "%");
+function linkHTML(s) {
+  const ext = s.ext ? ' target="_blank" rel="noopener"' : "";
+  const sec = s.sec ? ` data-sec="${s.sec}"` : "";
+  return `<a class="link" href="${s.href}"${ext}${sec}><span class="label">${esc(s.label)}</span></a>`;
+}
+$("#tree").innerHTML = MENU.map((m) => `
+  <div class="branch">
+    <a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span><span class="line"></span></a>
+    <div class="branches sub">${m.subs.map((s) => `<div class="branch">${linkHTML(s)}</div>`).join("")}</div>
+  </div>`).join("");
+
+const tree = $("#tree");
+let leaveTimer;
+tree.querySelectorAll(":scope > .branch").forEach((b) => {
+  b.addEventListener("mouseenter", () => {
+    clearTimeout(leaveTimer);
+    tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
+    b.classList.add("active");
+    tree.classList.add("has-active");
   });
+});
+function closeMenu() {
+  tree.querySelectorAll(".active").forEach((x) => x.classList.remove("active"));
+  tree.classList.remove("has-active");
 }
-table.innerHTML = MAGS.map((m, i) => `
-  <a class="mag" href="#${m.slug}" style="z-index:${i + 1}" aria-label="${esc(m.no + " " + m.title)}" tabindex="-1">${COVERS[m.style](m)}</a>`).join("");
-place();
-phone.addEventListener("change", place);
-
-/* ---------- scroll-driven camera ---------- */
-const room = document.getElementById("room"), topV = document.getElementById("top");
-const hero = document.getElementById("hero"), hint = document.getElementById("hint");
-const mags = [...table.children];
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const ramp = (v, a, b) => clamp((v - a) / (b - a));
-const ease = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-let target = 0, shown = 0, live = false;
-function progress() {
-  const max = document.documentElement.scrollHeight - innerHeight;
-  return max > 0 ? clamp(scrollY / max) : 0;
-}
-function render(p) {
-  /* 1. push into the coffee table */
-  const z = ease(ramp(p, 0, .62));
-  const s = 1 + (ROOM.zoom - 1) * z;
-  const ox = (ROOM.focus.x - 50) / 100, oy = (ROOM.focus.y - 50) / 100;
-  room.style.transform = `translate(${-ox * s * z * 100}%, ${-oy * s * z * 100}%) scale(${s})`;
-  room.style.filter = `blur(${ramp(p, .42, .62) * 6}px)`;
-  /* 2. cross-fade to looking straight down at the table */
-  const t = ease(ramp(p, .44, .7));
-  room.style.opacity = 1 - t;
-  topV.style.opacity = t;
-  topV.style.transform = `scale(${1.28 - .28 * t}) rotate(${(1 - t) * -4}deg)`;
-  topV.style.filter = `blur(${(1 - t) * 8}px)`;
-  /* 3. magazines settle onto the table one after another */
-  mags.forEach((el, i) => {
-    const k = ease(ramp(p, .6 + i * .03, .78 + i * .03));
-    el.style.setProperty("--in", k);
-    el.style.setProperty("--dy", `${(1 - k) * -18}%`);
-  });
-  hero.style.opacity = 1 - ramp(p, 0, .18);
-  hero.style.transform = `translateY(${-ramp(p, 0, .18) * 20}px)`;
-  hint.style.opacity = .8 * (1 - ramp(p, 0, .08));
-  const on = p > .95;
-  if (on !== live) {
-    live = on;
-    table.classList.toggle("live", on);
-    mags.forEach((el) => el.tabIndex = on ? 0 : -1);
-    if (!on) setLabel(null);
-  }
-}
-function tick() {
-  shown += (target - shown) * (reduce ? 1 : .12);
-  if (Math.abs(target - shown) < .0005) shown = target;
-  render(shown);
-  if (shown !== target) requestAnimationFrame(tick); else running = false;
-}
-let running = false;
-function onScroll() {
-  target = progress();
-  if (!running) { running = true; requestAnimationFrame(tick); }
-}
-addEventListener("scroll", onScroll, { passive: true });
-addEventListener("resize", onScroll);
-
-/* ease to the end of the scroll if the visitor stops part-way through */
-let idle;
-addEventListener("scroll", () => {
-  clearTimeout(idle);
-  idle = setTimeout(() => {
-    const p = progress(), max = document.documentElement.scrollHeight - innerHeight;
-    if (document.body.classList.contains("reading")) return;
-    if (p > .55 && p < .99) scrollTo({ top: max, behavior: "smooth" });
-    else if (p > .01 && p < .2) scrollTo({ top: 0, behavior: "smooth" });
-  }, 260);
-}, { passive: true });
-
-/* ---------- hover caption ---------- */
-const label = document.getElementById("label");
-function setLabel(m) {
-  label.classList.toggle("on", !!m);
-  if (m) { label.querySelector(".no").textContent = "No. " + m.no; label.querySelector(".t").textContent = m.title; }
-}
-mags.forEach((el, i) => {
-  el.addEventListener("mouseenter", () => live && setLabel(MAGS[i]));
-  el.addEventListener("focus", () => live && setLabel(MAGS[i]));
-  el.addEventListener("mouseleave", () => setLabel(null));
-  el.addEventListener("blur", () => setLabel(null));
+tree.addEventListener("mouseleave", () => { leaveTimer = setTimeout(closeMenu, 350); });
+tree.addEventListener("click", (e) => { if (e.target.closest(".sub a")) closeMenu(); });
+$("#menu").addEventListener("focusout", (e) => { if (!$("#menu").contains(e.relatedTarget)) closeMenu(); });
+/* keep the page content clear of the menu, however many rows it wraps to */
+const setMenuH = () => document.documentElement.style.setProperty("--menu-h", tree.offsetHeight + "px");
+setMenuH();
+if ("ResizeObserver" in window) new ResizeObserver(setMenuH).observe(tree);
+document.fonts?.ready.then(setMenuH);
+$("#menu").addEventListener("focusin", (e) => {
+  const b = e.target.closest(".root > .branch");
+  if (!b) return;
+  tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
+  b.classList.add("active"); tree.classList.add("has-active");
 });
 
-/* ---------- opening an issue (placeholder until each project is designed) ---------- */
-const reader = document.getElementById("reader");
-function route() {
-  const m = MAGS.find((x) => "#" + x.slug === location.hash);
-  reader.classList.toggle("open", !!m);
-  document.body.classList.toggle("reading", !!m);
-  if (m) {
-    document.getElementById("rNo").textContent = "No. " + m.no;
-    document.getElementById("rTitle").textContent = m.title;
-    document.title = `${m.title} — Heeje Lee`;
-    setLabel(null);
-  } else {
-    document.title = "Heeje Lee — Portfolio";
-    requestAnimationFrame(() => { scrollTo(0, document.documentElement.scrollHeight); onScroll(); });
+/* section links (Process / Prototype / Contact) */
+let pendingSec = null;
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[href^='#']");
+  if (!a) return;
+  pendingSec = a.dataset.sec || null;
+  if (a.getAttribute("href") === location.hash) {
+    e.preventDefault();
+    goSection(pendingSec);
   }
+});
+function goSection(sec) {
+  const el = sec ? document.getElementById("sec-" + sec) : null;
+  window.scrollTo({ top: el ? el.getBoundingClientRect().top + scrollY - 80 : 0, behavior: "smooth" });
+  pendingSec = null;
 }
-document.getElementById("rBack").addEventListener("click", () => { history.pushState(null, "", location.pathname); route(); });
-addEventListener("hashchange", route);
-addEventListener("popstate", route);
-if (location.hash) route();
-onScroll();
+
+/* ---------- notification bar ---------- */
+$("#barText").textContent = SITE.bar;
+$("#barClose").addEventListener("click", () => document.body.classList.add("bar-closed"));
+
+/* ---------- splash ---------- */
+const splash = $("#splash");
+$("#lockup").innerHTML = `
+  <div class="w1">${esc(SITE.first)}</div>
+  <div class="w2">${[...SITE.last].map((ch) => `<span>${esc(ch)}</span>`).join("")}</div>
+  <div class="w3">${esc(SITE.tagline)}</div>`;
+if (SITE.splash.src) {
+  const img = new Image();
+  img.alt = "";
+  img.onload = () => img.classList.add("loaded");
+  img.src = SITE.splash.src;
+  $("#splashPh").appendChild(img);
+}
+$("#splashPh").style.background = SITE.splash.c;
+
+let splashOn = false;
+let splashBusy = false;   /* ignore input while the slide is running */
+let hideTimer;
+const atHome = () => ["", "#home"].includes(location.hash);
+function settle() { splashBusy = true; setTimeout(() => { splashBusy = false; }, 1300); }
+function showSplash(animate) {
+  if (splashOn) return;
+  clearTimeout(hideTimer);
+  splashOn = true;
+  document.documentElement.classList.add("locked");
+  document.body.classList.add("splash-visible");
+  splash.hidden = false;
+  if (animate) {
+    splash.classList.add("seen");
+    void splash.offsetHeight;   /* start from above the screen, then slide down */
+    settle();
+  }
+  splash.classList.remove("out");
+}
+function hideSplash() {
+  if (!splashOn || splashBusy) return;
+  splashOn = false;
+  settle();
+  splash.classList.add("out");
+  document.body.classList.remove("splash-visible");
+  hideTimer = setTimeout(() => {
+    document.documentElement.classList.remove("locked");
+    splash.hidden = true;
+  }, 1200);
+}
+/* scrolling up past the top of the home page brings the opening screen back */
+function tryReturn() { if (!splashOn && !splashBusy && atHome() && scrollY <= 0) showSplash(true); }
+window.addEventListener("wheel", (e) => {
+  if (splashOn && e.deltaY > 0) hideSplash();
+  else if (e.deltaY < 0) tryReturn();
+}, { passive: true });
+let touchY = null;
+window.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener("touchmove", (e) => {
+  if (touchY === null) return;
+  const dy = touchY - e.touches[0].clientY;
+  if (splashOn && dy > 12) hideSplash();
+  else if (dy < -40) tryReturn();
+}, { passive: true });
+window.addEventListener("keydown", (e) => {
+  if (splashOn && ["ArrowDown", "PageDown", " ", "Enter", "End"].includes(e.key)) { e.preventDefault(); hideSplash(); }
+  else if (["ArrowUp", "PageUp", "Home"].includes(e.key)) tryReturn();
+});
+splash.addEventListener("click", hideSplash);
+
+/* ---------- rendering ---------- */
+function ph(img, cap) {
+  const inner = img.src ? `<img src="${esc(img.src)}" alt="${esc(img.alt || "")}" loading="lazy">` : "";
+  return `<div class="ph" style="--c:${img.c};aspect-ratio:${img.r}">${inner}${cap ? `<span class="cap">${esc(cap)}</span>` : ""}</div>`;
+}
+function item(img, { cap, href, w = 90, o = 0, right = false } = {}) {
+  const tag = href ? "a" : "div";
+  const h = href ? ` href="${href}"` : "";
+  return `<${tag} class="item${right ? " right" : ""}"${h} style="--w:${w}%;--o:${o}%"><div class="reveal">${ph(img, cap)}</div></${tag}>`;
+}
+/* widths and offsets borrowed from the reference grid: slightly uneven, right column dropped */
+const PAIRS = [[89, 0, 97, 4], [81, 6, 87, 0], [94, 0, 84, 9], [86, 3, 92, 0]];
+function twoUp(imgs, caps = [], hrefs = []) {
+  let out = "";
+  for (let i = 0; i < imgs.length; i += 2) {
+    const [lw, lo, rw, ro] = PAIRS[(i / 2) % PAIRS.length];
+    out += `<div class="row">${item(imgs[i], { cap: caps[i], href: hrefs[i], w: lw, o: lo })}${imgs[i + 1] ? item(imgs[i + 1], { cap: caps[i + 1], href: hrefs[i + 1], w: rw, o: ro }) : ""}</div>`;
+  }
+  return out;
+}
+function footer() {
+  return `<footer class="foot">
+    <div class="slash">/</div>
+    <div><p>${esc(SITE.blurb)}</p>
+      <nav><a href="#about" data-sec="contact">Contact</a>${SITE.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>
+    </div>
+  </footer>`;
+}
+
+function renderHome() {
+  return `<div class="rows">${twoUp(
+    PROJECTS.map((p) => p.cover),
+    PROJECTS.map((p) => `View ${p.title}`),
+    PROJECTS.map((p) => "#" + p.slug)
+  )}</div>${footer()}`;
+}
+
+
+/* ---------- moodboard layout ---------- */
+/* stable pseudo-random offsets per page, so the collage looks the same on every visit */
+function seeded(str) {
+  let h = 1779033703;
+  for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 3432918353), h = (h << 13) | (h >>> 19);
+  return () => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+function mbItem(img, rand) {
+  const x = Math.round(rand() * 60 - 30), y = Math.round(rand() * 60 - 30);
+  const media = !img.src ? "" : /\.(mp4|webm|mov)$/i.test(img.src)
+    ? `<video src="${esc(img.src)}" autoplay muted loop playsinline></video>`
+    : `<img src="${esc(img.src)}" alt="${esc(img.alt || img.cap || "")}" loading="lazy" draggable="false">`;
+  return `<div class="mb-item ${esc(img.size || "medium")}" style="--x:${x}%;--y:${y}%;--x0:${x + 4}%;--y0:${y + 10}%">
+    <div class="mb-story">
+      <div class="mb-media" style="--c:${img.c};aspect-ratio:${img.r}">${media}</div>
+      ${img.cap ? `<div class="mb-cap">${esc(img.cap)}</div>` : ""}
+    </div></div>`;
+}
+/* a text list can mix paragraphs and images: a string is a paragraph,
+   an image object (or an array of them) becomes an image group in place */
+function blocks(list, rand) {
+  return (list || []).map((b) => typeof b === "string"
+    ? `<p class="rv">${fmt(b)}</p>`
+    : `<div class="mb mb-inline">${[].concat(b).map((im) => mbItem(im, rand)).join("")}</div>`).join("");
+}
+function renderMoodboard(p, next) {
+  const rand = seeded(p.slug);
+  const meta = [["Project", p.code], ["Year", p.year], ["Type", p.type], ["Tools", p.tools]].filter(([, v]) => v);
+  return `
+    <section class="intro slim">
+      <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
+    </section>
+    <div class="mb">${(p.imagesBefore || []).map((im) => mbItem(im, rand)).join("")}</div>
+    <section class="mb-note" id="sec-overview">
+      ${p.note ? `<p class="fine rv">${fmt(p.note)}</p>` : ""}
+      ${blocks(p.overview, rand)}
+      <div class="sec-label rv" id="sec-process">Process</div>
+      ${blocks(p.process, rand)}
+    </section>
+    <div class="mb">${(p.imagesAfter || []).map((im) => mbItem(im, rand)).join("")}</div>
+    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
+    ${footer()}`;
+}
+/* drag images around with the mouse, like the reference */
+let dragZ = 10;
+document.addEventListener("pointerdown", (e) => {
+  const it = e.target.closest(".mb-item");
+  if (!it || e.pointerType !== "mouse" || e.button !== 0) return;
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY;
+  const bx = +it.dataset.dx || 0, by = +it.dataset.dy || 0;
+  it.classList.add("dragging"); it.style.zIndex = ++dragZ;
+  const move = (ev) => {
+    it.dataset.dx = bx + ev.clientX - sx; it.dataset.dy = by + ev.clientY - sy;
+    it.style.translate = `${it.dataset.dx}px ${it.dataset.dy}px`;
+  };
+  const up = () => { it.classList.remove("dragging"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+  addEventListener("pointermove", move); addEventListener("pointerup", up);
+});
+
+function renderProject(p) {
+  const i = PROJECTS.indexOf(p);
+  const next = PROJECTS[(i + 1) % PROJECTS.length];
+  if (p.layout === "moodboard") return renderMoodboard(p, next);
+  return `
+    <section class="intro">
+      <dl class="meta">
+        <dt>Project</dt><dd>${esc(p.code)}</dd>
+        <dt>Year</dt><dd>${esc(p.year)}</dd>
+        <dt>Type</dt><dd>${esc(p.type)}</dd>
+        <dt>Tools</dt><dd>${esc(p.tools)}</dd>
+      </dl>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body"><p>${fmt(p.summary)}</p></div></div>
+    </section>
+    <div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>
+    <div class="sec-label" id="sec-process">Process</div>
+    <p class="sec-text">${fmt(p.process)}</p>
+    <div class="rows">${twoUp(p.processImgs)}</div>
+    <div class="sec-label" id="sec-prototype">Prototype</div>
+    <p class="sec-text">${fmt(p.prototype)}</p>
+    <div class="rows">${twoUp(p.protoImgs)}</div>
+    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
+    ${footer()}`;
+}
+
+function renderAbout() {
+  return `
+    <section class="intro">
+      <dl class="meta">
+        <dt>Name</dt><dd>${esc(fullName)}</dd>
+        <dt>Program</dt><dd>MDes, UC Berkeley</dd>
+        <dt>Background</dt><dd>Electrical engineering</dd>
+      </dl>
+      <div><h1 class="title">About</h1><div class="body">${ABOUT.bio.map((t) => `<p>${fmt(t)}</p>`).join("")}</div></div>
+    </section>
+    <div class="rows">${twoUp([ABOUT.portrait, ABOUT.studio], ["Portrait", "Studio"])}</div>
+    <div class="sec-label" id="sec-contact">Contact</div>
+    <ul class="contact-list">
+      <li>Email <span class="sel" id="email">${esc(SITE.email)}</span><button class="copy" id="copyEmail" type="button">Copy</button></li>
+      ${SITE.links.map((l) => `<li><a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)} ↗</a></li>`).join("")}
+    </ul>
+    ${footer()}`;
+}
+
+/* reveal tiles as they scroll into view (tiles already on screen stay visible) */
+let io;
+function armReveal() {
+  if (io) io.disconnect();
+  if (!("IntersectionObserver" in window)) { document.querySelectorAll("#main .mb-item").forEach((el) => el.classList.add("in")); return; }
+  io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.remove("pre"); io.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll("#main .item, #main .rv").forEach((el) => {
+    if (el.getBoundingClientRect().top > innerHeight * 0.92) { el.classList.add("pre"); io.observe(el); }
+  });
+  /* moodboard images drift into place as they enter, including the ones already on screen */
+  const mbIo = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); mbIo.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -6% 0px" });
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll("#main .mb-item").forEach((el) => mbIo.observe(el))));
+}
+
+const main = $("#main");
+function route() {
+  const slug = (location.hash || "#home").slice(1);
+  const p = PROJECTS.find((x) => x.slug === slug);
+  const html = p ? renderProject(p) : slug === "about" ? renderAbout() : renderHome();
+  document.title = p ? `${p.title} — ${fullName}` : slug === "about" ? `About — ${fullName}` : `${fullName} Portfolio`;
+  main.classList.add("fade");
+  setTimeout(() => {
+    main.innerHTML = html;
+    window.scrollTo(0, 0);
+    armReveal();
+    const ce = $("#copyEmail");
+    if (ce) ce.addEventListener("click", () => {
+      navigator.clipboard?.writeText(SITE.email).then(() => { ce.textContent = "Copied"; })
+        .catch(() => { const r = document.createRange(); r.selectNodeContents($("#email")); getSelection().removeAllRanges(); getSelection().addRange(r); });
+    });
+    main.classList.remove("fade");
+    if (pendingSec) setTimeout(() => goSection(pendingSec), 60);
+  }, main.innerHTML ? 300 : 0);
+}
+window.addEventListener("hashchange", route);
+
+/* first load: splash only on the home page */
+const startSlug = (location.hash || "#home").slice(1);
+if (startSlug === "home" || startSlug === "") showSplash(false); else splash.hidden = true;
+route();
 </script>
 </body>
 </html>
