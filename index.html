@@ -95,11 +95,15 @@ body.splash-visible.splash-img .menu { color: var(--on-image); }
 .braille {
   --u: clamp(5px, 1.1vw, 12px);
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  display: flex; gap: calc(var(--u) * 3.5); z-index: 1;
+  display: flex; z-index: 1;
   color: var(--ink); pointer-events: none;
 }
 body.splash-img .braille { color: var(--on-image); }
-.braille .cell {
+/* once every dot is in, the word can be hovered */
+.braille.ready { pointer-events: auto; }
+/* each cell is padded so the hover targets touch (no dead gaps between letters) */
+.braille .cell { position: relative; padding: calc(var(--u) * 2) calc(var(--u) * 1.75); }
+.braille .dots {
   display: grid; grid-template-columns: repeat(2, calc(var(--u) * 1.5));
   grid-template-rows: repeat(3, calc(var(--u) * 1.5));
   grid-auto-flow: column; gap: calc(var(--u) * 1);
@@ -111,8 +115,19 @@ body.splash-img .braille { color: var(--on-image); }
 }
 .braille .dot.empty { visibility: hidden; }
 .braille .dot.on { opacity: 1; transform: scale(1); }
+/* English letter, same Futura as the menu, cap height about the height of a braille cell */
+.braille .letter {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font: 500 calc(var(--u) * 9)/1 var(--mono); text-transform: uppercase;
+  opacity: 0; transform: translateY(calc(var(--u) * .8));
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.braille .cell .dot.on { transition: opacity .3s ease, transform .3s ease; }
+.braille .cell.en .dot.on { opacity: 0; transform: scale(.4); }
+.braille .cell.en .letter { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .braille .dot { transition: none; }
+  .braille .dot, .braille .letter, .braille .cell .dot.on { transition: none; }
 }
 
 /* ---------- content ---------- */
@@ -424,14 +439,62 @@ $("#splashPh").style.background = SITE.splash.c;
 const BRAILLE_WORD = "YIHEEJAY";
 const BRAILLE_DOTS = { Y: [1, 3, 4, 5, 6], I: [2, 4], H: [1, 2, 5], E: [1, 5], J: [2, 4, 5], A: [1] };
 const BRAILLE_TIME = 5000;  /* every dot is in by 5 seconds */
+const BRAILLE_HOLD = 5000;  /* a left-to-right swipe shows the English word this long */
 (() => {
   const box = $("#braille");
-  box.innerHTML = [...BRAILLE_WORD].map((ch) => `<div class="cell">${[1, 2, 3, 4, 5, 6]
-    .map((n) => `<span class="dot${BRAILLE_DOTS[ch].includes(n) ? "" : " empty"}"></span>`).join("")}</div>`).join("");
+  box.innerHTML = [...BRAILLE_WORD].map((ch) => `<div class="cell"><div class="dots">${[1, 2, 3, 4, 5, 6]
+    .map((n) => `<span class="dot${BRAILLE_DOTS[ch].includes(n) ? "" : " empty"}"></span>`).join("")}</div><span class="letter" aria-hidden="true">${ch}</span></div>`).join("");
+  const cells = [...box.querySelectorAll(".cell")];
   const dots = [...box.querySelectorAll(".dot:not(.empty)")];
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { dots.forEach((d) => d.classList.add("on")); return; }
-  /* random moment for each dot; the transition is .45s, so the last one starts by 4.55s */
-  dots.forEach((d) => setTimeout(() => d.classList.add("on"), 150 + Math.random() * (BRAILLE_TIME - 600)));
+
+  /* 1. dots pop in at random; the word becomes hoverable when the last one lands */
+  let last = 0;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) dots.forEach((d) => d.classList.add("on"));
+  else dots.forEach((d) => {
+    const t = 150 + Math.random() * (BRAILLE_TIME - 600);   /* + .45s transition = in by 5s */
+    last = Math.max(last, t);
+    setTimeout(() => d.classList.add("on"), t);
+  });
+  setTimeout(() => box.classList.add("ready"), last + 450);
+
+  /* 2. hover a letter: it turns English, then back to braille shortly after you leave */
+  let whole = false, wholeTimer;
+  const leaveTimers = new Map();
+  cells.forEach((c) => {
+    c.addEventListener("pointerenter", () => { clearTimeout(leaveTimers.get(c)); c.classList.add("en"); });
+    c.addEventListener("pointerleave", () => {
+      if (whole) return;
+      leaveTimers.set(c, setTimeout(() => c.classList.remove("en"), 350));
+    });
+  });
+
+  /* 3. one left-to-right sweep across the word: all of it turns English for 5s */
+  let sweep = null;   /* { x: furthest x so far, t: start time } */
+  const rect = () => box.getBoundingClientRect();
+  function flipAll() {
+    whole = true;
+    cells.forEach((c) => { clearTimeout(leaveTimers.get(c)); c.classList.add("en"); });
+    clearTimeout(wholeTimer);
+    wholeTimer = setTimeout(() => {
+      whole = false;
+      cells.forEach((c) => { if (!c.matches(":hover")) c.classList.remove("en"); });
+    }, BRAILLE_HOLD);
+  }
+  box.addEventListener("pointerenter", (e) => {
+    const r = rect();
+    sweep = e.clientX - r.left < r.width * 0.15 ? { x: e.clientX, t: performance.now() } : null;
+  });
+  box.addEventListener("pointermove", (e) => {
+    if (!sweep) return;
+    const r = rect();
+    if (e.clientX < sweep.x - 12 || performance.now() - sweep.t > 1600) { sweep = null; return; }   /* went back, or too slow */
+    sweep.x = Math.max(sweep.x, e.clientX);
+    if (e.clientX - r.left > r.width * 0.88) { sweep = null; flipAll(); }
+  });
+  box.addEventListener("pointerleave", (e) => {
+    if (sweep && e.clientX >= rect().right - 4 && performance.now() - sweep.t <= 1600) flipAll();
+    sweep = null;
+  });
 })();
 
 let splashOn = false;
