@@ -8,7 +8,7 @@
 <meta name="description" content="Heeje Lee — design and physical computing portfolio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:ital,wght@0,700;1,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,500;0,700;1,500;1,700&display=swap">
 <style>
 /* Layout: fixed mono menu tree along the top, staggered two-up image rows on the right,
    full-bleed splash that slides up on first scroll (after songforthemute.com). */
@@ -17,12 +17,14 @@
   --ink: #000000;
   --bar: #000000;
   --bar-ink: #f4f0eb;
-  --splash: #a9aba6;
+  --splash: #ffffff;
   --on-image: #ffffff;
-  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  /* Futura Medium. Macs/iPhones have Futura built in; everywhere else falls back to Jost,
+     a free Futura look-alike from Google Fonts. */
+  --mono: "Futura PT", Futura, "Jost", "Century Gothic", sans-serif;
+  --sans: var(--mono);
   --unit: 6px;
-  --bar-h: 32px;
+  --bar-h: 0px;
   --menu-h: 40px;
   --content-x: 24px;
   --intro-speed: 1.2s;
@@ -32,31 +34,14 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { background: var(--paper); color: var(--ink); }
-body { font: 12px/1.66 var(--mono); -webkit-font-smoothing: antialiased; }
+body { font: 500 13px/1.6 var(--mono); -webkit-font-smoothing: antialiased; }
 html.locked, html.locked body { overflow: hidden; }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 :focus-visible { outline: 1px dashed currentColor; outline-offset: 3px; }
 
-/* ---------- notification bar ---------- */
-.notify {
-  position: fixed; inset: 0 0 auto; z-index: 6;
-  height: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  background: var(--bar); color: var(--bar-ink);
-  display: flex; align-items: center; justify-content: center;
-  text-transform: uppercase; white-space: nowrap; overflow: hidden;
-  transition: transform .5s ease-in-out;
-}
-.notify a { text-decoration: underline; text-underline-offset: 2px; }
-.notify .x { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); font-size: 18px; line-height: 1; }
-body.bar-closed .notify { transform: translateY(-100%); }
-
 /* ---------- menu: the original tree, turned to run along the top ----------
-   Spine runs across the top; hovering an item grows a line down from it,
-   then its options fade in at the end of that line, stacked downward. */
+   Spine runs across the top; each project name is a link. The current page is underlined. */
 .menu {
   position: fixed; left: 0; right: 0; z-index: 5;
   top: calc(var(--bar-h) + env(safe-area-inset-top, 0px) + 14px);
@@ -67,7 +52,8 @@ body.bar-closed .notify { transform: translateY(-100%); }
   transition: top .5s ease-in-out, color .6s ease-in-out;
 }
 body.bar-closed .menu { top: calc(env(safe-area-inset-top, 0px) + 14px); }
-body.splash-visible .menu { color: var(--on-image); }
+/* white menu text only when the opening screen has a picture on it */
+body.splash-visible.splash-img .menu { color: var(--on-image); }
 .branches { position: relative; padding-left: calc(var(--unit) * 2); pointer-events: auto; }
 .branches::before {
   content: ""; position: absolute; left: 0; top: .75rem;
@@ -84,27 +70,11 @@ body.splash-visible .menu { color: var(--on-image); }
   padding: var(--unit) 0; line-height: 18px;
   text-transform: uppercase; cursor: pointer;
 }
-.link .label { flex-grow: 0; padding-right: calc(var(--unit) * 2); white-space: pre; transition: opacity .3s; }
-.root > .branch > .link { position: relative; justify-content: center; }
+.link .label { letter-spacing: .04em; flex-grow: 0; padding-right: calc(var(--unit) * 2); white-space: pre; transition: opacity .3s; }
+.root > .branch > .link { justify-content: center; }
 .root > .branch > .link .label { padding-right: 0; }
-.link .line {
-  display: none; position: absolute; left: 50%; top: 100%;
-  width: 1px; height: calc(var(--unit) * 5); background: currentColor;
-  transform-origin: center top; animation: grow .3s ease-in-out both;
-}
-.branch.active > .link .line { display: block; }
-.root.has-active > .branch.active > .link .label { opacity: .45; }
-.sub {
-  display: none; position: absolute; left: 50%;
-  top: calc(100% + var(--unit) * 5);
-  animation: reveal .5s ease-in-out .3s both;
-}
-.sub .link { padding: calc(var(--unit) / 2) 0; }
-.sub::before { top: 0; height: calc(100% - .75rem); }
-.branch.active > .sub { display: block; }
-.sub .link:hover .label, .root > .branch > .link:hover .label { opacity: .6; }
-@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+.root > .branch > .link:hover .label { opacity: .5; }
+.root > .branch > .link.current .label { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 
 /* ---------- splash ---------- */
 .splash {
@@ -118,24 +88,6 @@ body.splash-visible .menu { color: var(--on-image); }
 .splash .ph { position: absolute; inset: 0; background: var(--splash); }
 .splash .ph img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 5s; }
 .splash .ph img.loaded { opacity: 1; }
-.lockup {
-  position: absolute; inset: 0; z-index: 2;
-  font-family: var(--sans); font-weight: 700; text-transform: uppercase;
-  letter-spacing: .018em; text-align: center;
-  font-size: clamp(22px, 2.75vw, 52px); line-height: 1;
-  animation: showup 2s ease-in-out 1.5s both;
-}
-.lockup > div { position: absolute; left: 0; right: 0; animation: showup 3s ease-in-out 1.5s both; }
-.lockup .w1 { top: 29%; }
-.lockup .w2 { top: 45%; display: flex; justify-content: center; gap: 8.5vw; }
-.lockup .w2 span:first-child { margin-left: -4vw; }
-.lockup .w3 { top: 67%; font-style: italic; }
-.splash .hint {
-  position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  text-align: center; font: 12px/1 var(--mono); text-transform: uppercase;
-  animation: showup 2s ease-in-out 3s both;
-}
-.splash.seen .lockup, .splash.seen .lockup > div, .splash.seen .hint { animation: none; }
 @keyframes showup { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- content ---------- */
@@ -177,7 +129,7 @@ a.item:hover .ph::after { opacity: .08; }
   gap: calc(var(--unit) * 6); padding-block: 15vh 10vh; align-items: end;
 }
 .title {
-  font-family: var(--sans); font-weight: 700; font-style: italic; text-transform: uppercase;
+  font-family: var(--sans); font-weight: 500; text-transform: uppercase;
   font-size: clamp(28px, 3.6vw, 60px); line-height: 1; letter-spacing: .01em;
   margin: 0 0 calc(var(--unit) * 4); text-wrap: balance;
 }
@@ -227,7 +179,7 @@ main { overflow-x: clip; }
 }
 .mb-note { max-width: 62ch; margin: calc(var(--unit) * 12) auto calc(var(--unit) * 14); font-size: 13px; line-height: 1.7; }
 .mb-note p { margin: 0 0 1em; }
-strong { font-weight: 500; }
+strong { font-weight: 700; }
 .mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
 .mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
 /* images placed between paragraphs: break out of the narrow text column to the moodboard width */
@@ -236,11 +188,17 @@ strong { font-weight: 500; }
 .rv.pre { opacity: 0; transform: translateY(40px); }
 .intro.slim .body:empty { display: none; }
 
+/* project video (Fast-Fashion, UAV) */
+.video { position: relative; width: 100%; background: #f1f1ef; overflow: hidden; }
+.video video, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
+.video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
+.video-cap { margin-top: 8px; font-size: 11px; }
+
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
   padding-block: 18vh 48px; align-items: end;
 }
-footer.foot .slash { font-family: var(--sans); font-weight: 700; font-size: 40px; line-height: 1; }
+footer.foot .slash { font-family: var(--sans); font-weight: 500; font-size: 40px; line-height: 1; }
 footer.foot p { margin: 0 0 12px; max-width: 56ch; }
 footer.foot nav { display: flex; gap: 18px; text-transform: uppercase; flex-wrap: wrap; }
 footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -258,12 +216,10 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
   .item, .item.right { width: 100%; transform: none; justify-self: stretch; }
   .intro, footer.foot { grid-template-columns: 1fr; padding-block: 48px 32px; gap: 24px; }
   .sec-label { padding-block: 56px 16px; }
-  .lockup { font-size: clamp(22px, 7vw, 40px); }
-  .lockup .w2 { gap: 9vw; }
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --intro-speed: .01s; }
-  .reveal, .lockup, .lockup > div, .splash .hint, .link .line, .sub, .mb-story, .rv { transition: none !important; animation: none !important; }
+  .reveal, .mb-story, .rv { transition: none !important; animation: none !important; }
   .item.pre .reveal { opacity: 1; transform: none; }
   .mb-story { opacity: 1; }
   .rv.pre { opacity: 1; transform: none; }
@@ -272,17 +228,10 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 </head>
 <body>
 
-<div class="notify" id="notify">
-  <span><span id="barText"></span> <a href="#about">VIEW ABOUT</a></span>
-  <button class="x" id="barClose" aria-label="Close notice">×</button>
-</div>
-
 <nav class="menu" id="menu" aria-label="Projects"><div class="branches root" id="tree"></div></nav>
 
 <section class="splash" id="splash" aria-label="Intro">
   <div class="ph" id="splashPh"></div>
-  <div class="lockup" id="lockup"></div>
-  <div class="hint">Scroll</div>
 </section>
 
 <main id="main"></main>
@@ -296,9 +245,9 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 const SITE = {
   first: "HEEJE",
   last: "LEE",
-  tagline: "Creative Technologist",
-  bar: "Portfolio 2026 ",
-  splash: { c: "#a9aba6", src: "" },
+  /* Opening screen. Blank white for now. To show a picture later, set
+     src: "images/your-photo.jpg" (it fills the screen and fades in; menu text turns white over it). */
+  splash: { c: "#ffffff", src: "" },
   email: "heeje.lee@berkeley.edu",
   links: [
     { label: "GitHub", href: "https://github.com/heeje-lee" },
@@ -308,44 +257,29 @@ const SITE = {
   blurb: "Heeje Lee. Designer and prototyper working between electrical engineering and interaction design. Objects that listen, react and remember."
 };
 
+/* Projects appear in this order in the menu and on the home page.
+   video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
+          or paste a YouTube / Vimeo link as src. r is the video's shape (16/9 for most videos). */
 const PROJECTS = [
   {
-    slug: "fast-fashion", title: "fast-fashion", year: "2023",
+    slug: "fast-fashion", title: "Fast-Fashion", year: "2023",
     type: "Art + Tech Exhibition", tools: "TouchDesigner, P5.js, MadMapper",
     summary: "Art+Tech exhibition highlighting how important brand storytelling is in the midst of fast-fashion trends",
+    video: { src: "", poster: "", r: "16/9", cap: "" },
     process: "Process.",
     cover: { c: "#3f3b37", r: "4/5" },
     processImgs: [{ c: "#b8b1a6", r: "4/5" }, { c: "#6d685f", r: "4/3" }, { c: "#8f8a82", r: "3/4" }, { c: "#d3cec4", r: "1/1" }],
     protoImgs: [{ c: "#2e2c29", r: "4/3" }, { c: "#a39686", r: "4/5" }]
   },
   {
-    slug: "GlobalHawk UAV", title: "UAV Systems Design & Integration", year: "2024-2026",
+    slug: "uav-systems-design-integration", title: "UAV Systems Design & Integration", year: "2024-2026",
     type: "Professional Working Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
     summary: "Worked on the upgrade and redesign of the intricate Systems of the legacy GlobalHawk Unmanned Aerial Vehicle directed by Northrop Grumman.",
+    video: { src: "", poster: "", r: "16/9", cap: "" },
     process: "...can't say",
     cover: { c: "#4b5462", r: "3/4" },
     processImgs: [{ c: "#8a96a3", r: "4/3" }, { c: "#2f3640", r: "4/5" }, { c: "#c3c9cf", r: "1/1" }, { c: "#5d6b78", r: "3/4" }],
     protoImgs: [{ c: "#1f242b", r: "4/5" }, { c: "#9aa4ae", r: "4/3" }]
-  },
-  {
-    slug: "", title: "Collective Metabolism Space", year: "2026",
-    type: "Tangible interface, team project", tools: "Spatial installation, sensors, actuation",
-    summary: "A room treated as a living body. It breathes, exhales, sweats and smells in response to the people inside it, so a crowd can feel its own presence as a shared metabolism.",
-    process: "Built for a tangible user interface course. We mapped bodily processes to room-scale outputs and tested which ones people noticed without being told.",
-    prototype: "A room-scale prototype with breathing surfaces and environmental responses.",
-    cover: { c: "#7a7f6c", r: "4/5" },
-    processImgs: [{ c: "#babfa9", r: "3/4" }, { c: "#545a49", r: "4/3" }, { c: "#9ca08b", r: "4/5" }, { c: "#353829", r: "1/1" }],
-    protoImgs: [{ c: "#c9ccbd", r: "4/3" }, { c: "#62674f", r: "4/5" }]
-  },
-  {
-    slug: "beauty-is-pain", code: "P.04", title: "Beauty is Pain", year: "2026",
-    type: "Interactive piece", tools: "Arduino, force sensor, p5.js, webcam",
-    summary: "Press down and your face gets smooshed. Let go and a beautify filter snaps it back to perfect. A force sensor turns the effort behind beauty standards into something you can feel in your hand.",
-    process: "The force sensing resistor reading drives a live distortion of the webcam image. Release is the trigger, so relief and the filter arrive at the same moment.",
-    prototype: "Arduino reads the sensor and streams it to a p5.js sketch running the camera effects.",
-    cover: { c: "#b79a92", r: "3/4" },
-    processImgs: [{ c: "#e0cfc9", r: "4/5" }, { c: "#8c6d66", r: "4/3" }, { c: "#cdb3ab", r: "1/1" }, { c: "#5e4642", r: "3/4" }],
-    protoImgs: [{ c: "#a5857c", r: "4/3" }, { c: "#ecdcd6", r: "4/5" }]
   },
   {
     /* Moodboard layout: images scatter across the page and drift into place as you scroll
@@ -361,7 +295,6 @@ const PROJECTS = [
     slug: "geographical-communications-network-systems-design", title: "Geographical Communications Network Systems Design", year: "2022-2024",
     type: "Systems Design, Test and Verification @ Northrop Grumman", tools: "QGIS, Python, MATLAB, Cameo",
     layout: "moodboard",
-    subs: [{ label: "All" }, { label: "Overview", sec: "overview" }, { label: "Process", sec: "process" }],
     cover: { src: "images/commsnetwork_main.png", r: "1290/900", size: "large", cap: "Generic communication network topology" },
     note: "*Due to clearance issues, specific details of this project have been left out. This project was part of a _**Special Access Program**_ supporting highly classified _**National Security**_ objectives, making precision and security very important throughout the process.",
     overview: [
@@ -390,14 +323,13 @@ const PROJECTS = [
     ]
   },
   {
-    slug: "memory-orb", code: "P.06", title: "Memory Orb", year: "2026",
-    type: "Design concept", tools: "Sketching, form studies",
-    summary: "A handheld orb for recording a memory as it happens. It sits in the palm like a keepsake and asks how capturing a moment could feel closer to holding it than filming it.",
-    process: "The concept grew out of how-might-we framing around memory and music, then moved through sketches and form studies of something small enough to always carry.",
-    prototype: "Form models exploring scale, grip and how the orb signals that it is recording.",
-    cover: { c: "#c9c2b3", r: "3/4" },
-    processImgs: [{ c: "#8f8676", r: "4/5" }, { c: "#e3ded3", r: "4/3" }, { c: "#a99f8d", r: "3/4" }, { c: "#5f5749", r: "1/1" }],
-    protoImgs: [{ c: "#d8d1c2", r: "4/3" }, { c: "#776e5f", r: "4/5" }]
+    slug: "analog-sampler", title: "Analog Sampler", year: "",
+    type: "", tools: "",
+    summary: "",
+    process: "",
+    cover: { c: "#8c8a84", r: "4/5" },
+    processImgs: [{ c: "#c4c1b9", r: "4/5" }, { c: "#5e5c57", r: "4/3" }, { c: "#a5a29b", r: "3/4" }, { c: "#3d3b38", r: "1/1" }],
+    protoImgs: [{ c: "#d9d6cf", r: "4/3" }, { c: "#74716b", r: "4/5" }]
   }
 ];
 
@@ -422,57 +354,17 @@ const fullName = `${SITE.first} ${SITE.last}`;
 
 /* ---------- menu ---------- */
 const MENU = [
-  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug, subs: (p.subs || [
-    { label: "All" },
-    { label: "Process", sec: "process" },
-    { label: "Prototype", sec: "prototype" }
-  ]).map((s) => ({ ...s, href: "#" + p.slug })) })),
-  { label: "About", href: "#about", subs: [
-    { label: "Bio", href: "#about" },
-    { label: "Contact", href: "#about", sec: "contact" },
-    ...SITE.links.slice(0, 1).map((l) => ({ label: l.label, href: l.href, ext: true }))
-  ] }
+  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug })),
+  { label: "About", href: "#about" }
 ];
-
-function linkHTML(s) {
-  const ext = s.ext ? ' target="_blank" rel="noopener"' : "";
-  const sec = s.sec ? ` data-sec="${s.sec}"` : "";
-  return `<a class="link" href="${s.href}"${ext}${sec}><span class="label">${esc(s.label)}</span></a>`;
-}
-$("#tree").innerHTML = MENU.map((m) => `
-  <div class="branch">
-    <a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span><span class="line"></span></a>
-    <div class="branches sub">${m.subs.map((s) => `<div class="branch">${linkHTML(s)}</div>`).join("")}</div>
-  </div>`).join("");
-
 const tree = $("#tree");
-let leaveTimer;
-tree.querySelectorAll(":scope > .branch").forEach((b) => {
-  b.addEventListener("mouseenter", () => {
-    clearTimeout(leaveTimer);
-    tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
-    b.classList.add("active");
-    tree.classList.add("has-active");
-  });
-});
-function closeMenu() {
-  tree.querySelectorAll(".active").forEach((x) => x.classList.remove("active"));
-  tree.classList.remove("has-active");
-}
-tree.addEventListener("mouseleave", () => { leaveTimer = setTimeout(closeMenu, 350); });
-tree.addEventListener("click", (e) => { if (e.target.closest(".sub a")) closeMenu(); });
-$("#menu").addEventListener("focusout", (e) => { if (!$("#menu").contains(e.relatedTarget)) closeMenu(); });
+tree.innerHTML = MENU.map((m) => `
+  <div class="branch"><a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span></a></div>`).join("");
 /* keep the page content clear of the menu, however many rows it wraps to */
 const setMenuH = () => document.documentElement.style.setProperty("--menu-h", tree.offsetHeight + "px");
 setMenuH();
 if ("ResizeObserver" in window) new ResizeObserver(setMenuH).observe(tree);
 document.fonts?.ready.then(setMenuH);
-$("#menu").addEventListener("focusin", (e) => {
-  const b = e.target.closest(".root > .branch");
-  if (!b) return;
-  tree.querySelectorAll(":scope > .branch.active").forEach((x) => x !== b && x.classList.remove("active"));
-  b.classList.add("active"); tree.classList.add("has-active");
-});
 
 /* section links (Process / Prototype / Contact) */
 let pendingSec = null;
@@ -491,29 +383,22 @@ function goSection(sec) {
   pendingSec = null;
 }
 
-/* ---------- notification bar ---------- */
-$("#barText").textContent = SITE.bar;
-$("#barClose").addEventListener("click", () => document.body.classList.add("bar-closed"));
-
 /* ---------- splash ---------- */
 const splash = $("#splash");
-$("#lockup").innerHTML = `
-  <div class="w1">${esc(SITE.first)}</div>
-  <div class="w2">${[...SITE.last].map((ch) => `<span>${esc(ch)}</span>`).join("")}</div>
-  <div class="w3">${esc(SITE.tagline)}</div>`;
 if (SITE.splash.src) {
   const img = new Image();
   img.alt = "";
   img.onload = () => img.classList.add("loaded");
   img.src = SITE.splash.src;
   $("#splashPh").appendChild(img);
+  document.body.classList.add("splash-img");
 }
 $("#splashPh").style.background = SITE.splash.c;
 
 let splashOn = false;
 let splashBusy = false;   /* ignore input while the slide is running */
-let hideTimer;
-const atHome = () => ["", "#home"].includes(location.hash);
+let hideTimer, homeTimer;
+const isHome = () => ["", "#", "#home"].includes(location.hash);
 function settle() { splashBusy = true; setTimeout(() => { splashBusy = false; }, 1300); }
 function showSplash(animate) {
   if (splashOn) return;
@@ -529,34 +414,55 @@ function showSplash(animate) {
   }
   splash.classList.remove("out");
 }
-function hideSplash() {
-  if (!splashOn || splashBusy) return;
+function hideSplash(force) {
+  if (!splashOn || (splashBusy && force !== true)) return;
   splashOn = false;
   settle();
   splash.classList.add("out");
   document.body.classList.remove("splash-visible");
+  clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
     document.documentElement.classList.remove("locked");
     splash.hidden = true;
   }, 1200);
 }
-/* scrolling up past the top of the home page brings the opening screen back */
-function tryReturn() { if (!splashOn && !splashBusy && atHome() && scrollY <= 0) showSplash(true); }
-window.addEventListener("wheel", (e) => {
-  if (splashOn && e.deltaY > 0) hideSplash();
-  else if (e.deltaY < 0) tryReturn();
+/* from a project or About: slide the opening screen down, then swap to the home page behind it */
+function returnHome() {
+  if (splashOn || splashBusy) return;
+  const fromPage = !isHome();
+  showSplash(true);
+  if (fromPage) homeTimer = setTimeout(() => {
+    history.pushState(null, "", location.pathname + location.search);
+    route();
+  }, 1250);
+}
+/* only count an upward pull once you've been resting at the top, so momentum from
+   scrolling up a page doesn't throw you back to the opening screen by accident */
+let topSince = scrollY <= 0 ? performance.now() : 0, pull = 0, pulls = 0, pullT = 0;
+addEventListener("scroll", () => {
+  if (scrollY > 0) { topSince = 0; pull = pulls = 0; }
+  else if (!topSince) topSince = performance.now();
 }, { passive: true });
-let touchY = null;
-window.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+const restingAtTop = () => scrollY <= 0 && topSince && performance.now() - topSince > 350;
+window.addEventListener("wheel", (e) => {
+  if (splashOn) { if (e.deltaY > 0) hideSplash(); return; }
+  if (e.deltaY >= 0 || !restingAtTop()) { pull = pulls = 0; return; }
+  const now = performance.now();
+  if (now - pullT > 400) pull = pulls = 0;
+  pullT = now; pull -= e.deltaY; pulls++;
+  if (pull > 60 || pulls >= 3) { pull = pulls = 0; returnHome(); }
+}, { passive: true });
+let touchY = null, touchTop = false;
+window.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; touchTop = scrollY <= 0; }, { passive: true });
 window.addEventListener("touchmove", (e) => {
   if (touchY === null) return;
   const dy = touchY - e.touches[0].clientY;
-  if (splashOn && dy > 12) hideSplash();
-  else if (dy < -40) tryReturn();
+  if (splashOn) { if (dy > 12) hideSplash(); }
+  else if (touchTop && dy < -60) { touchY = null; returnHome(); }
 }, { passive: true });
 window.addEventListener("keydown", (e) => {
   if (splashOn && ["ArrowDown", "PageDown", " ", "Enter", "End"].includes(e.key)) { e.preventDefault(); hideSplash(); }
-  else if (["ArrowUp", "PageUp", "Home"].includes(e.key)) tryReturn();
+  else if (!splashOn && scrollY <= 0 && ["ArrowUp", "PageUp", "Home"].includes(e.key)) returnHome();
 });
 splash.addEventListener("click", hideSplash);
 
@@ -659,27 +565,34 @@ document.addEventListener("pointerdown", (e) => {
   addEventListener("pointermove", move); addEventListener("pointerup", up);
 });
 
+function videoBlock(v) {
+  const src = v.src || "";
+  const yt = src.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  const vm = src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const allow = 'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen';
+  const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0" title="Project video" ${allow}></iframe>`
+    : vm ? `<iframe src="https://player.vimeo.com/video/${vm[1]}" title="Project video" ${allow}></iframe>`
+    : src ? `<video src="${esc(src)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video>`
+    : `<span class="vsoon">Video coming soon</span>`;
+  return `<div class="video" style="aspect-ratio:${v.r || "16/9"}">${inner}</div>${v.cap ? `<div class="video-cap">${esc(v.cap)}</div>` : ""}`;
+}
 function renderProject(p) {
   const i = PROJECTS.indexOf(p);
   const next = PROJECTS[(i + 1) % PROJECTS.length];
   if (p.layout === "moodboard") return renderMoodboard(p, next);
+  const meta = [["Project", p.code], ["Year", p.year], ["Type", p.type], ["Tools", p.tools]].filter(([, v]) => v);
+  const section = (id, label, text, imgs = []) => (text || imgs.length) ? `
+    <div class="sec-label" id="sec-${id}">${label}</div>
+    ${text ? `<p class="sec-text">${fmt(text)}</p>` : ""}
+    <div class="rows">${twoUp(imgs)}</div>` : "";
   return `
     <section class="intro">
-      <dl class="meta">
-        <dt>Project</dt><dd>${esc(p.code)}</dd>
-        <dt>Year</dt><dd>${esc(p.year)}</dd>
-        <dt>Type</dt><dd>${esc(p.type)}</dd>
-        <dt>Tools</dt><dd>${esc(p.tools)}</dd>
-      </dl>
-      <div><h1 class="title">${esc(p.title)}</h1><div class="body"><p>${fmt(p.summary)}</p></div></div>
+      <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
     </section>
-    <div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>
-    <div class="sec-label" id="sec-process">Process</div>
-    <p class="sec-text">${fmt(p.process)}</p>
-    <div class="rows">${twoUp(p.processImgs)}</div>
-    <div class="sec-label" id="sec-prototype">Prototype</div>
-    <p class="sec-text">${fmt(p.prototype)}</p>
-    <div class="rows">${twoUp(p.protoImgs)}</div>
+    ${p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
+    ${section("process", "Process", p.process, p.processImgs)}
+    ${section("prototype", "Prototype", p.prototype, p.protoImgs)}
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
     ${footer()}`;
 }
@@ -726,6 +639,9 @@ function route() {
   const slug = (location.hash || "#home").slice(1);
   const p = PROJECTS.find((x) => x.slug === slug);
   const html = p ? renderProject(p) : slug === "about" ? renderAbout() : renderHome();
+  /* picking a project from the opening screen slides it away */
+  if ((p || slug === "about") && splashOn) hideSplash(true);
+  tree.querySelectorAll(".link").forEach((a) => a.classList.toggle("current", a.getAttribute("href") === "#" + slug));
   document.title = p ? `${p.title} — ${fullName}` : slug === "about" ? `About — ${fullName}` : `${fullName} Portfolio`;
   main.classList.add("fade");
   setTimeout(() => {
@@ -741,7 +657,7 @@ function route() {
     if (pendingSec) setTimeout(() => goSection(pendingSec), 60);
   }, main.innerHTML ? 300 : 0);
 }
-window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => { clearTimeout(homeTimer); route(); });
 
 /* first load: splash only on the home page */
 const startSlug = (location.hash || "#home").slice(1);
