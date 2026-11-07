@@ -90,6 +90,31 @@ body.splash-visible.splash-img .menu { color: var(--on-image); }
 .splash .ph img.loaded { opacity: 1; }
 @keyframes showup { from { opacity: 0; } to { opacity: 1; } }
 
+/* braille "YIHEEJAY" on the opening screen; dots pop in at random within 5s on each load.
+   Proportions follow standard braille: dot 1.5, dot spacing 2.5, cell pitch 6 (in --u). */
+.braille {
+  --u: clamp(5px, 1.1vw, 12px);
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; gap: calc(var(--u) * 3.5); z-index: 1;
+  color: var(--ink); pointer-events: none;
+}
+body.splash-img .braille { color: var(--on-image); }
+.braille .cell {
+  display: grid; grid-template-columns: repeat(2, calc(var(--u) * 1.5));
+  grid-template-rows: repeat(3, calc(var(--u) * 1.5));
+  grid-auto-flow: column; gap: calc(var(--u) * 1);
+}
+.braille .dot {
+  width: 100%; height: 100%; border-radius: 50%; background: currentColor;
+  opacity: 0; transform: scale(.3);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.3, 1.6, .5, 1);
+}
+.braille .dot.empty { visibility: hidden; }
+.braille .dot.on { opacity: 1; transform: scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .braille .dot { transition: none; }
+}
+
 /* ---------- content ---------- */
 main {
   padding-top: calc(var(--bar-h) + 14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px));
@@ -232,6 +257,7 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 
 <section class="splash" id="splash" aria-label="Intro">
   <div class="ph" id="splashPh"></div>
+  <div class="braille" id="braille" role="img" aria-label="YIHEEJAY in braille"></div>
 </section>
 
 <main id="main"></main>
@@ -393,6 +419,20 @@ if (SITE.splash.src) {
   document.body.classList.add("splash-img");
 }
 $("#splashPh").style.background = SITE.splash.c;
+
+/* braille: YIHEEJAY. Dots numbered 1-2-3 down the left column, 4-5-6 down the right. */
+const BRAILLE_WORD = "YIHEEJAY";
+const BRAILLE_DOTS = { Y: [1, 3, 4, 5, 6], I: [2, 4], H: [1, 2, 5], E: [1, 5], J: [2, 4, 5], A: [1] };
+const BRAILLE_TIME = 5000;  /* every dot is in by 5 seconds */
+(() => {
+  const box = $("#braille");
+  box.innerHTML = [...BRAILLE_WORD].map((ch) => `<div class="cell">${[1, 2, 3, 4, 5, 6]
+    .map((n) => `<span class="dot${BRAILLE_DOTS[ch].includes(n) ? "" : " empty"}"></span>`).join("")}</div>`).join("");
+  const dots = [...box.querySelectorAll(".dot:not(.empty)")];
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { dots.forEach((d) => d.classList.add("on")); return; }
+  /* random moment for each dot; the transition is .45s, so the last one starts by 4.55s */
+  dots.forEach((d) => setTimeout(() => d.classList.add("on"), 150 + Math.random() * (BRAILLE_TIME - 600)));
+})();
 
 let splashOn = false;
 let splashBusy = false;   /* ignore input while the slide is running */
