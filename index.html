@@ -27,6 +27,7 @@
   --bar-h: 0px;
   --menu-h: 40px;
   --content-x: 24px;
+  --video-w: 960px;   /* how wide project videos get; smaller number = smaller video */
   --intro-speed: 1.2s;
   --intro-easing: cubic-bezier(0.46, 0.03, 0.52, 0.96);
   color-scheme: light;
@@ -236,10 +237,10 @@ strong { font-weight: 700; }
 .intro.slim .body:empty { display: none; }
 
 /* project video (Fast-Fashion, UAV) */
-.video { position: relative; width: 100%; background: #f1f1ef; overflow: hidden; }
+.video { position: relative; width: min(100%, var(--video-w)); margin: 0 auto; background: #f1f1ef; overflow: hidden; }
 .video video, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
-.video-cap { margin-top: 8px; font-size: 11px; }
+.video-cap { width: min(100%, var(--video-w)); margin: 8px auto 0; font-size: 11px; }
 
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
@@ -323,7 +324,8 @@ const PROJECTS = [
       { label: "Context", text: [
         "By visualizing these processes into an immersive environment, I examined how storytelling rather than design defines authenticity, desire, and cultural meaning. How brand storytelling can shape perception, value, and community.",
         "One side of the installation showcased behind-the-scenes footage and production imagery, highlighting the raw labor and process that contrast with fashion’s polished, luxurious front-end. On the opposite side, I projection-mapped runway footage to display the spectacle of high fashion. Beyond imagery, I incorporated bold statements about storytelling and authenticity to challenge viewers to question what gives a brand meaning. By essentially visualizing the whole spectrum of fashion, these layered visual and conceptual elements worked together to create an immersive experience that invited reflection on the relationship between fashion, narrative, and perception."
-      ], imgs: [{ src: "images/fast_fashion2.JPG", r: "1800/1200" }, { src: "images/fast_fashion4.JPG", r: "1200/1800", cap: "'Signing into' the Fashion Show" }] },
+      ], imgs: [{ src: "images/fast_fashion2.JPG", r: "1800/1200" }] 
+               [{ src: "images/fast_fashion4.JPG", r: "1200/1800", cap: "'Signing into' the Fashion Show" }] },
       { label: "Technical Development", text: [
         "Technology functioned as a spatial storytelling medium rather than a focal point. Projection mapping, software coded and node-based generative visuals, and point cloud rendering were used to design the digital surfaces of the physical installation.",
         "By designing the space itself as an interface, the installation positioned the environment as the first point of engagement, allowing the technical systems to remain subtle."
@@ -334,7 +336,7 @@ const PROJECTS = [
   {
     slug: "uav-systems-design-integration", title: "RQ-4 Global Hawk", year: "2024-2026",
     type: "Industry Systems Design & Integration Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
-    summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
+    summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk is a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
     video: { src: "", poster: "", r: "16/9", cap: "" },
     sections: [
       { label: "Project Summary & Role", text: [
@@ -705,7 +707,7 @@ function videoBlock(v) {
   const yt = src.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
   const vm = src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   const allow = 'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen';
-  const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0" title="Project video" ${allow}></iframe>`
+  const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&cc_load_policy=0&iv_load_policy=3" title="Project video" ${allow}></iframe>`
     : vm ? `<iframe src="https://player.vimeo.com/video/${vm[1]}" title="Project video" ${allow}></iframe>`
     : src ? `<video src="${esc(src)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video>`
     : `<span class="vsoon">Video coming soon</span>`;
