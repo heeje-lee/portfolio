@@ -193,6 +193,10 @@ a.item:hover .ph::after { opacity: .08; }
 .sec-sub { text-transform: uppercase; letter-spacing: .04em; font-size: 12px; opacity: .55; margin: 2.4em 0 .8em; }
 .sec-list { margin: 0 0 1.2em; padding-left: 1.2em; }
 .sec-list li { margin-bottom: .35em; }
+.sec-quote { margin: 1.4em 0; padding-left: 1.2em; border-left: 1px solid currentColor; font-size: 15px; line-height: 1.5; }
+/* stacked images: one per row, centered at the video's width */
+.stack { display: grid; gap: calc(var(--unit) * 4); justify-items: center; }
+.stack .item { width: min(100%, var(--video-w)); justify-self: center; transform: none; }
 .sec-text { max-width: 56ch; margin: 0 0 calc(var(--unit) * 6); font-size: 13px; line-height: 1.7; }
 .next {
   display: flex; align-items: center; gap: 12px; text-transform: uppercase;
@@ -308,7 +312,9 @@ const SITE = {
 /* Projects appear in this order in the menu and on the home page.
    sections: a list of headed parts, each { label: "Heading", text: [...], imgs: [...] }.
      In text, a string is a paragraph, { h: "Small heading" } is a subheading,
-     and { list: ["...", "..."] } is a bulleted list. **bold** and _italic_ work everywhere.
+     { list: ["...", "..."] } is a bulleted list, and { quote: "..." } is a set-off quote line.
+     Add stack: true to a section to show its images one on top of the other instead of side by side.
+     **bold** and _italic_ work everywhere.
    video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
           or paste a YouTube / Vimeo link as src. r is the video's shape (16/9 for most videos). */
 const PROJECTS = [
@@ -324,19 +330,30 @@ const PROJECTS = [
       { label: "Context", text: [
         "By visualizing these processes into an immersive environment, I examined how storytelling rather than design defines authenticity, desire, and cultural meaning. How brand storytelling can shape perception, value, and community.",
         "One side of the installation showcased behind-the-scenes footage and production imagery, highlighting the raw labor and process that contrast with fashion’s polished, luxurious front-end. On the opposite side, I projection-mapped runway footage to display the spectacle of high fashion. Beyond imagery, I incorporated bold statements about storytelling and authenticity to challenge viewers to question what gives a brand meaning. By essentially visualizing the whole spectrum of fashion, these layered visual and conceptual elements worked together to create an immersive experience that invited reflection on the relationship between fashion, narrative, and perception."
-      ], imgs: [{ src: "images/fast_fashion2.JPG", r: "1800/1200" }] 
-               [{ src: "images/fast_fashion4.JPG", r: "1200/1800", cap: "'Signing into' the Fashion Show" }] },
+      ], stack: true, imgs: [{ src: "images/fast_fashion2.JPG", r: "1800/1200" }, { src: "images/fast_fashion5.JPG", r: "1800/1200" }] },
       { label: "Technical Development", text: [
         "Technology functioned as a spatial storytelling medium rather than a focal point. Projection mapping, software coded and node-based generative visuals, and point cloud rendering were used to design the digital surfaces of the physical installation.",
         "By designing the space itself as an interface, the installation positioned the environment as the first point of engagement, allowing the technical systems to remain subtle."
-      ], imgs: [{ src: "images/fast_fashion1.JPG", r: "4/3" }, { src: "images/fast_fashion5.JPG", r: "1800/1200" }] }
+      ], imgs: [{ src: "images/fast_fashion1.JPG", r: "4/3" }, { src: "images/fast_fashion4.JPG", r: "1200/1800", cap: "'Signing into' the Fashion Show" }] },
+      { label: "Prototyping", text: [
+        "These iterative decisions from scaling, spatial restructuring to removing unnecessary features were all guided by a single question:",
+        { quote: "Does this strengthen the narrative of brand storytelling?" },
+        "This process taught me how to balance technical possibilities and conceptual coherence, allowing the installation to be a more intentional, immersive experience."
+      ] },
+      { label: "Final Outcome", text: [
+        "The final installation succeeded in creating a fully immersive environment that guided viewers through the layered world of fashion. The combination of projection mapping, generative visuals, spatial composition, and bold textual elements allowed the audience to view the installation in multiple stages. By visualizing the spectrum of fashion’s identity-making process, the installation was made into a sensory experience.",
+        "One of the most impactful outcomes was seeing how viewers interacted with my work. Many paused at the wall of shirts, leaning in to examine the projected logos and textures, while others gravitated toward the tower of wholesale boxes or the installation as a whole. Their engagement validated my intention to invite exploration and have viewers find their own meaning through my installation.",
+        "Reflecting on the project, I gained a deeper understanding of how spatial design, technology, and narrative can work together. I learned that immersive design requires constant adaptation to unexpected challenges, negotiation between technical possibilities and conceptual clarity, and that sometimes sacrificing certain features aligned better with my original goal. But most importantly, the project shifted my perspective on creative technology. Using design and technology as interactive tools and as mediums for a bigger objective.",
+        "This project shaped my identity as a designer who works at the intersection of art and technology. It reinforced the importance of thoughtful intention behind every visual and spatial decision. It also taught me how to create work that speaks to audiences emotionally and visually. The installation became more than a technical exploration as it became a lesson in how design creates meaning and how immersive experiences can reveal the narratives embedded in our everyday culture.",
+        "Truly, the best part of this experience was really seeing each viewer immersed in the installation, almost like they were in their own world."
+      ] }
     ],
     cover: { src: "images/fast_fashion_cover.png", r: "1200/1800" }
   },
   {
     slug: "uav-systems-design-integration", title: "RQ-4 Global Hawk", year: "2024-2026",
     type: "Industry Systems Design & Integration Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
-    summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk is a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
+    summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
     video: { src: "", poster: "", r: "16/9", cap: "" },
     sections: [
       { label: "Project Summary & Role", text: [
@@ -717,6 +734,7 @@ const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 function textBlock(b) {
   if (typeof b === "string") return `<p>${fmt(b)}</p>`;
   if (b.h) return `<div class="sec-sub">${fmt(b.h)}</div>`;
+  if (b.quote) return `<p class="sec-quote">${fmt(b.quote)}</p>`;
   if (b.list) return `<ul class="sec-list">${b.list.map((t) => `<li>${fmt(t)}</li>`).join("")}</ul>`;
   return "";
 }
@@ -738,7 +756,9 @@ function renderProject(p) {
     ${p.sections ? p.sections.map((sc) => `
       <div class="sec-col"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
       <div class="sec-body">${(sc.text || []).map(textBlock).join("")}</div></div>
-      ${sc.imgs && sc.imgs.length ? `<div class="rows">${twoUp(sc.imgs)}</div>` : ""}`).join("")
+      ${!(sc.imgs && sc.imgs.length) ? ""
+        : sc.stack ? `<div class="stack">${sc.imgs.map((im) => item(im, { cap: im.cap })).join("")}</div>`
+        : `<div class="rows">${twoUp(sc.imgs, sc.imgs.map((im) => im.cap))}</div>`}`).join("")
     : section("process", "Process", p.process, p.processImgs) + section("prototype", "Prototype", p.prototype, p.protoImgs)}
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
     ${footer()}`;
