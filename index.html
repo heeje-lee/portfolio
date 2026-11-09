@@ -21,7 +21,7 @@
   --on-image: #ffffff;
   /* Futura Medium. Macs/iPhones have Futura built in; everywhere else falls back to Jost,
      a free Futura look-alike from Google Fonts. */
-  --mono: "Futura PT", Futura, "Jost", "Century Gothic", sans-serif;
+  --mono: Futura, "Futura PT", "Jost", "Century Gothic", sans-serif;
   --sans: var(--mono);
   --unit: 6px;
   --bar-h: 0px;
@@ -44,16 +44,17 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
    Spine runs across the top; each project name is a link. The current page is underlined. */
 .menu {
   position: fixed; left: 0; right: 0; z-index: 5;
-  top: calc(var(--bar-h) + env(safe-area-inset-top, 0px) + 14px);
+  /* solid white bar so page text never shows through behind the menu */
+  top: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 14px); padding-bottom: 10px;
+  background: var(--paper);
   display: flex; justify-content: center;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  color: var(--ink); pointer-events: none;
-  transition: top .5s ease-in-out, color .6s ease-in-out;
+  color: var(--ink);
+  transition: background .6s ease-in-out, color .6s ease-in-out;
 }
-body.bar-closed .menu { top: calc(env(safe-area-inset-top, 0px) + 14px); }
 /* white menu text only when the opening screen has a picture on it */
-body.splash-visible.splash-img .menu { color: var(--on-image); }
+body.splash-visible.splash-img .menu { color: var(--on-image); background: transparent; }
 .branches { position: relative; padding-left: calc(var(--unit) * 2); pointer-events: auto; }
 .branches::before {
   content: ""; position: absolute; left: 0; top: .75rem;
@@ -183,6 +184,9 @@ a.item:hover .ph::after { opacity: .08; }
   padding-block: 12vh 18px;
 }
 .sec-label::after { content: ""; flex: 0 0 9rem; height: 1px; background: currentColor; }
+/* text column centered on the page; images below it stay full width */
+.sec-col { max-width: 62ch; margin: 0 auto; }
+.sec-col .sec-label { padding-block: 12vh 18px; }
 .sec-body { max-width: 62ch; margin: 0 0 calc(var(--unit) * 6); font-size: 13px; line-height: 1.7; }
 .sec-body p { margin: 0 0 1em; }
 .sec-sub { text-transform: uppercase; letter-spacing: .04em; font-size: 12px; opacity: .55; margin: 2.4em 0 .8em; }
@@ -210,25 +214,23 @@ main { overflow-x: clip; }
 .mb-item:nth-child(2n) { margin-left: auto; margin-right: 0; }
 .mb-item.small { width: 16.666%; }
 .mb-item.large { width: 41.666%; }
-.mb-story {
-  transform: translate(calc(var(--x0) * var(--k)), calc(var(--y0) * var(--k)));
-  opacity: 0; transition: transform 1.33s, opacity 1s;
-}
-.mb-item.in .mb-story { transform: translate(calc(var(--x) * var(--k)), calc(var(--y) * var(--k))); opacity: 1; }
+/* images stay put in the flow (no drifting or dragging); they just fade in */
+.mb-story { opacity: 0; transition: opacity 1s; }
+.mb-item.in .mb-story { opacity: 1; }
 .mb-media { position: relative; overflow: hidden; background: var(--c, #999); }
 .mb-media img, .mb-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; }
 .mb-cap { margin-top: 6px; font-size: 10px; line-height: 1.4; }
-@media (hover: hover) {
-  .mb-item { cursor: grab; }
-  .mb-item.dragging { cursor: grabbing; }
-}
 .mb-note { max-width: 62ch; margin: calc(var(--unit) * 12) auto calc(var(--unit) * 14); font-size: 13px; line-height: 1.7; }
 .mb-note p { margin: 0 0 1em; }
 strong { font-weight: 700; }
 .mb-note .fine { font-size: 11px; opacity: .6; font-style: italic; margin-bottom: calc(var(--unit) * 5); }
 .mb-note .sec-label { padding-block: calc(var(--unit) * 7) 14px; }
 /* images placed between paragraphs: break out of the narrow text column to the moodboard width */
-.mb.mb-inline { width: 75vw; margin: calc(var(--unit) * 4) 0 calc(var(--unit) * 2) calc(50% - 37.5vw); padding-top: calc(var(--unit) * 4); }
+.mb.mb-inline {
+  width: 75vw; margin: calc(var(--unit) * 4) 0 calc(var(--unit) * 4) calc(50% - 37.5vw); padding-top: 0;
+  justify-content: center; align-items: flex-start; gap: calc(var(--unit) * 6);
+}
+.mb.mb-inline > .mb-item { margin: 0; }
 .rv { transition: transform 1.33s ease, opacity 1s ease; }
 .rv.pre { opacity: 0; transform: translateY(40px); }
 .intro.slim .body:empty { display: none; }
@@ -698,23 +700,6 @@ function renderMoodboard(p, next) {
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
     ${footer()}`;
 }
-/* drag images around with the mouse, like the reference */
-let dragZ = 10;
-document.addEventListener("pointerdown", (e) => {
-  const it = e.target.closest(".mb-item");
-  if (!it || e.pointerType !== "mouse" || e.button !== 0) return;
-  e.preventDefault();
-  const sx = e.clientX, sy = e.clientY;
-  const bx = +it.dataset.dx || 0, by = +it.dataset.dy || 0;
-  it.classList.add("dragging"); it.style.zIndex = ++dragZ;
-  const move = (ev) => {
-    it.dataset.dx = bx + ev.clientX - sx; it.dataset.dy = by + ev.clientY - sy;
-    it.style.translate = `${it.dataset.dx}px ${it.dataset.dy}px`;
-  };
-  const up = () => { it.classList.remove("dragging"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
-  addEventListener("pointermove", move); addEventListener("pointerup", up);
-});
-
 function videoBlock(v) {
   const src = v.src || "";
   const yt = src.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
@@ -739,8 +724,8 @@ function renderProject(p) {
   if (p.layout === "moodboard") return renderMoodboard(p, next);
   const meta = [["Project", p.code], ["Year", p.year], ["Type", p.type], ["Tools", p.tools]].filter(([, v]) => v);
   const section = (id, label, text, imgs = []) => (text || imgs.length) ? `
-    <div class="sec-label" id="sec-${id}">${label}</div>
-    ${text ? `<p class="sec-text">${fmt(text)}</p>` : ""}
+    <div class="sec-col"><div class="sec-label" id="sec-${id}">${label}</div>
+    ${text ? `<p class="sec-text">${fmt(text)}</p>` : ""}</div>
     <div class="rows">${twoUp(imgs)}</div>` : "";
   return `
     <section class="intro">
@@ -749,8 +734,8 @@ function renderProject(p) {
     </section>
     ${p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
     ${p.sections ? p.sections.map((sc) => `
-      <div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
-      <div class="sec-body">${(sc.text || []).map(textBlock).join("")}</div>
+      <div class="sec-col"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
+      <div class="sec-body">${(sc.text || []).map(textBlock).join("")}</div></div>
       ${sc.imgs && sc.imgs.length ? `<div class="rows">${twoUp(sc.imgs)}</div>` : ""}`).join("")
     : section("process", "Process", p.process, p.processImgs) + section("prototype", "Prototype", p.prototype, p.protoImgs)}
     <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
