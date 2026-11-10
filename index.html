@@ -246,6 +246,25 @@ strong { font-weight: 700; }
 .video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
 .video-cap { width: min(100%, var(--video-w)); margin: 8px auto 0; font-size: 11px; }
 
+/* ---------- creative works ---------- */
+.works { display: grid; gap: 16vh; padding-top: 4vh; }
+/* tall pictures shrink so the whole piece fits on screen */
+.work { width: min(100%, var(--video-w), calc(78vh * var(--ar, 1.78))); margin: 0 auto; }
+.work-media { position: relative; overflow: hidden; background: #f1f1ef; }
+.work-media img, .work-media video, .work-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; display: block; }
+.work-media .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
+/* under the media: tools greyed out on the left, title + caption on the right */
+.work-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 24px; margin-top: 14px; align-items: start; }
+.work-tools { color: #8a8a8a; font-size: 11px; line-height: 1.6; text-transform: uppercase; letter-spacing: .03em; }
+.work-tools span { display: block; }
+.work-title { text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; font-size: 13px; font-weight: 500; }
+.work-cap { margin: 0; font-size: 13px; line-height: 1.6; max-width: 56ch; }
+@media (max-width: 860px) {
+  .works { gap: 72px; }
+  .work-info { grid-template-columns: 1fr; gap: 10px; }
+  .work-text { order: -1; }
+}
+
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
   padding-block: 18vh 48px; align-items: end;
@@ -435,10 +454,92 @@ const PROJECTS = [
     slug: "analog-sampler", title: "Analog Sampler", year: "",
     type: "", tools: "",
     summary: "",
-    process: "",
-    cover: { c: "#8c8a84", r: "4/5" },
-    processImgs: [{ c: "#c4c1b9", r: "4/5" }, { c: "#5e5c57", r: "4/3" }, { c: "#a5a29b", r: "3/4" }, { c: "#3d3b38", r: "1/1" }],
-    protoImgs: [{ c: "#d9d6cf", r: "4/3" }, { c: "#74716b", r: "4/5" }]
+    sections: [
+      { label: "Context", text: [
+        "This project began as a redesign into how _**physical interfaces shape creative workflow.**_ Contemporary music hardware often relies heavily on external software, splitting up the experience of music production and complicating the music creating process. Our goal was to reimagine the sampler not as a peripheral device, but as a _**self-contained system**_ that prioritizes _**clarity, functionality, and prioritizes human interaction**_.",
+        "Rather than competing on advanced functionality features, we focused on how simple interface design, feedback, and system architecture can improve how users think, experiment, and remain engaged during music creation.",
+        "An analysis of existing products revealed a _**tradeoff between flexibility and functionality**_. Entry-level samplers often required continuous computer connectivity, while higher-end devices achieved autonomy at the cost of accessibility and price. These observations reframed and shaped our design approach to how we could design an affordable, stand alone sampler that supports both experimentation and live performance without external connections."
+      ] },
+      { label: "Design Objectives", text: [
+        "The analog sampler/mixer (ASM) was designed as a standalone instrument for music creation, live musical performance, and recording within one single system. Features such as equalization filtering, additional effects, and live recording are to be done all within this device.",
+        "As a result, design priorities included minimizing workflow interruptions, providing immediate tactile feedback, ease of memory management, and allowing users to focus on creative exploration rather than system management. Connectivity to external software was treated as _**optional rather than essential**_, reinforcing the device’s autonomy. The user became the center and priority of our design principle for this project."
+      ] },
+      { label: "Ideation & System Architecture", text: [
+        "_**System architecture decisions**_ were guided by _**interaction requirements**_ rather than _**raw technical performance**_.",
+        "The core technical features of the _**Teensy 4.1 microcontroller and audio codec were selected to support near-immediate playback, serial communication protocol, onboard memory storage, and real-time visual feedback**_. This allowed us to create an accessible experience to the musical workflow process.",
+        "_**Technical constraints directly shaped interaction design**_.",
+        { list: [
+          "Limited onboard memory and space required intentional soundbank organization, prioritizing structure.",
+          "LCD refresh limitations influenced how feedback was visualized, prioritizing clarity over animation."
+        ] },
+        "_**Rather than treating these limitations as obstacles, they became mechanisms for simplifying the user experience and keeping our design focus on the user.**_"
+      ], imgs: [{ c: "#c4c1b9", r: "4/5" }, { c: "#5e5c57", r: "4/3" }] },
+      { label: "Prototyping, Initial Sketches & Design Philosophies", text: [
+        "_**Prototyping emphasized usability over completeness.**_ Early iterations prioritized functional verification, but with repeated testing we were able to improve orientation, accessibility, and serial communication mapping. Reorganizing the beatpad layout and other physical controls to a simple layout, reduced learning time and allowed users to interact intuitively without referencing documentation.",
+        "Throughout the initial design processes, performance was ensured in measuring input/output (I/O) delay and signal to ratio (SNR) output. When incremental changes were made to the Analog Sampler (ASM) prototypes, _**I/O delay was measured to ensure that the ASM maintained near immediate playback.**_ In the same way, _**Signal to Noise Ratio (SNR) was measured to ensure that newly implemented hardware components did not increase the SNR output.**_ The team also made sure the ASM remained reliable through pass/fail weekly stress test sessions of the device. During these weekly tests, _**failed edge cases were integrated and taken note of.**_",
+        { list: [
+          "For example, when the team noticed that the gain of a long recording will clip. This was due to a gain control error within the code that the team missed as short recordings will not showcase this edge case."
+        ] },
+        "This specific architecture shown in the PCB schematic above was chosen as it was the _**most user friendly method.**_ In order for the ASM to function as intended, it required a user to properly understand all the features. _**Interactive features**_ including pressing the buttons, recording a sound, and playing back the recorded sounds were all _**intentionally designed to be easy to use and approachable.**_",
+        "_**Initially**_, the MIDI 4x4 layout was _**designed in a straight line**_. Through many prototype iterations, we _**shifted our design focus on first time users and simplified the layout**_. Putting each note in chronological order when chopping up samples for a song was the best technique for an easier workflow.",
+        { list: [
+          "For example, when using the song “Runaway” by Kanye West, each piano key was mapped to each button chronologically, making it easier to play the song. Color coding each button by columns distinguished which buttons were the 4x4 beatpad and which were the other functionality buttons."
+        ] }
+      ], imgs: [{ c: "#a5a29b", r: "3/4" }, { c: "#3d3b38", r: "1/1" }] },
+      { label: "User Work Flow & Interaction Design", text: [
+        "_**User workflow was designed around a small set of repeatable actions: loading sounds, mapping samples, recording, and playback.**_ By limiting the number of interaction modes and relying on consistent physical interactions, the system prevents overcomplication.",
+        { list: [
+          "For example, the PC connection is pivotal for the pre-processing of the sounds that need to be boarded onto the on board memory. For our software to properly access the sounds, we had to convert the sound files from .wav to .cpp and .h files. Incorporating them into the FLASH memory, gave the user full control of where the sound files will be stored and kept."
+        ] },
+        "The design also gave the user a simple method to fit more than 16 sounds through a software architecture I designed. There is one column set of 2 buttons, easily distinguishable, used to iterate through the soundbanks on the device. The team used an iteration system where pressing the upper button, “i” will increase in value (++). Then the lower button will lower “i” (--). The “i” is essentially one whole set of sixteen soundbanks."
+      ], imgs: [{ c: "#d9d6cf", r: "4/3" }, { c: "#74716b", r: "4/5" }] },
+      { label: "Reflection", text: [
+        "This project was my first real experience with _**how engineering can become a medium for artistic expression.**_ It taught me that _**interaction design is created with purpose**_. It requires meaningful decisions at every level. _**As I moved through the project, I found myself going from simply “making the system work” to designing for how a user would feel, think, and flow while creating music.**_",
+        "I learned that _**designing for humans often means letting go of technically impressive features or aesthetic flourishes if they stray away from the user.**_",
+        "Even when the final prototype functioned, I could clearly see where the design could be improved. For example, including a visual aid for the recording functions or indicating which iteration of the soundbank the user is located on would be huge user-friendly design improvements. This project reframed creativity as something based in _**practicality and purpose, which inspired me to design tools that are not only functional and aesthetically pleasing but also ethical and intuitive to the people who rely on them.**_"
+      ] }
+    ],
+    cover: { c: "#8c8a84", r: "4/5" }
+  }
+];
+
+/* Creative Works: a simple page of smaller pieces, one after another.
+   Each work:
+     title:   name of the piece
+     media:   { src: "images/name.jpg" | "videos/name.mp4" | a YouTube / Vimeo link, r: "width/height" }
+              add loop: true to an .mp4 to make it play silently on repeat (like a moving picture)
+     caption: one sentence explaining the project (**bold** and _italic_ work)
+     tools:   ["Tool", "Tool", ...]  shown in grey under the bottom-left of the picture/video */
+const CREATIVE = [
+  {
+    title: "Project One",
+    media: { src: "", r: "16/9" },
+    caption: "One sentence explaining the project.",
+    tools: ["Tool A", "Tool B", "Tool C"]
+  },
+  {
+    title: "Project Two",
+    media: { src: "", r: "4/5" },
+    caption: "One sentence explaining the project.",
+    tools: ["Tool A", "Tool B"]
+  },
+  {
+    title: "Project Three",
+    media: { src: "", r: "16/9" },
+    caption: "One sentence explaining the project.",
+    tools: ["Tool A", "Tool B", "Tool C"]
+  },
+  {
+    title: "Project Four",
+    media: { src: "", r: "1/1" },
+    caption: "One sentence explaining the project.",
+    tools: ["Tool A", "Tool B"]
+  },
+  {
+    title: "Project Five",
+    media: { src: "", r: "16/9" },
+    caption: "One sentence explaining the project.",
+    tools: ["Tool A", "Tool B", "Tool C"]
   }
 ];
 
@@ -464,6 +565,7 @@ const fullName = `${SITE.first} ${SITE.last}`;
 /* ---------- menu ---------- */
 const MENU = [
   ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug })),
+  { label: "Creative Works", href: "#creative-works" },
   { label: "About", href: "#about" }
 ];
 const tree = $("#tree");
@@ -764,6 +866,39 @@ function renderProject(p) {
     ${footer()}`;
 }
 
+function workMedia(m = {}) {
+  const src = m.src || "";
+  const yt = src.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  const vm = src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const allow = 'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen';
+  const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&cc_load_policy=0&iv_load_policy=3" title="Video" ${allow}></iframe>`
+    : vm ? `<iframe src="https://player.vimeo.com/video/${vm[1]}" title="Video" ${allow}></iframe>`
+    : /\.(mp4|webm|mov)$/i.test(src) ? (m.loop
+        ? `<video src="${esc(src)}" autoplay muted loop playsinline></video>`
+        : `<video src="${esc(src)}" controls playsinline preload="metadata"${m.poster ? ` poster="${esc(m.poster)}"` : ""}></video>`)
+    : src ? `<img src="${esc(src)}" alt="${esc(m.alt || "")}" loading="lazy">`
+    : `<span class="vsoon">Image or video coming soon</span>`;
+  return `<div class="work-media" style="aspect-ratio:${m.r || "16/9"}">${inner}</div>`;
+}
+const ratio = (r = "16/9") => { const [a, b] = String(r).split("/").map(Number); return a && b ? (a / b).toFixed(4) : 1.7778; };
+function renderCreative() {
+  return `
+    <section class="intro">
+      <dl class="meta"><dt>Works</dt><dd>${CREATIVE.length}</dd></dl>
+      <div><h1 class="title">Creative Works</h1></div>
+    </section>
+    <div class="works">${CREATIVE.map((w) => `
+      <article class="work rv" style="--ar:${ratio(w.media && w.media.r)}">
+        ${workMedia(w.media)}
+        <div class="work-info">
+          <div class="work-tools">${w.tools && w.tools.length ? `Tools used:${w.tools.map((t) => `<span>${esc(t)}</span>`).join("")}` : ""}</div>
+          <div class="work-text">${w.title ? `<h2 class="work-title">${esc(w.title)}</h2>` : ""}${w.caption ? `<p class="work-cap">${fmt(w.caption)}</p>` : ""}</div>
+        </div>
+      </article>`).join("")}
+    </div>
+    ${footer()}`;
+}
+
 function renderAbout() {
   return `
     <section class="intro">
@@ -805,11 +940,11 @@ const main = $("#main");
 function route() {
   const slug = (location.hash || "#home").slice(1);
   const p = PROJECTS.find((x) => x.slug === slug);
-  const html = p ? renderProject(p) : slug === "about" ? renderAbout() : renderHome();
+  const html = p ? renderProject(p) : slug === "creative-works" ? renderCreative() : slug === "about" ? renderAbout() : renderHome();
   /* picking a project from the opening screen slides it away */
-  if ((p || slug === "about") && splashOn) hideSplash(true);
+  if ((p || slug === "about" || slug === "creative-works") && splashOn) hideSplash(true);
   tree.querySelectorAll(".link").forEach((a) => a.classList.toggle("current", a.getAttribute("href") === "#" + slug));
-  document.title = p ? `${p.title} — ${fullName}` : slug === "about" ? `About — ${fullName}` : `${fullName} Portfolio`;
+  document.title = p ? `${p.title} — ${fullName}` : slug === "creative-works" ? `Creative Works — ${fullName}` : slug === "about" ? `About — ${fullName}` : `${fullName} Portfolio`;
   main.classList.add("fade");
   setTimeout(() => {
     main.innerHTML = html;
