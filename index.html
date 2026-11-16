@@ -284,7 +284,7 @@ video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
   opacity: .75; transition: opacity .3s, background .3s;
 }
 .slide-btn:hover, .slide-btn:focus-visible { opacity: 1; background: rgba(255, 255, 255, .6); }
-.slide-btn.prev { left: 12px; } .slide-btn.next { right: 12px; }
+.slide-btn.slide-prev { left: 12px; } .slide-btn.slide-next { right: 12px; }
 .slide-btn svg { width: 18px; height: 18px; }
 .slide-dots { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 2; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
 .slide-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, .5); box-shadow: 0 0 2px rgba(0, 0, 0, .4); }
@@ -574,7 +574,7 @@ const CREATIVE = [
   },
   {
     title: "My Soles Worn Out",
-    media: { src: "videos/audioreactive2.mp4", r: "16/9", hover: true },
+    media: { src: "images/audioreactive2.mp4", r: "16/9", hover: true },
     caption: "Experimental visuals for artist Jooyoung's _My Soles Worn Out_ video.",
     role: "Creative Direction",
     tools: ["TouchDesigner", "Blob-tracking", "Audio-reactivity"]
@@ -594,7 +594,7 @@ const CREATIVE = [
   },
   {
     title: "Galaxy",
-    media: { src: "videos/galaxt.mp4", r: "16/9", hover: true },
+    media: { src: "images/galaxt.mp4", r: "16/9", hover: true },
     caption: "Experimental audio-reactive visuals.",
     role: "Creator and Designer",
     tools: ["TouchDesigner"]
@@ -962,8 +962,8 @@ function workMedia(m = {}) {
     const chev = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="${d}"/></svg>`;
     return `<div class="work-media slides" style="aspect-ratio:${m.r || "1/1"}" data-i="0">
       ${m.slides.map((s, i) => `<img src="${esc(s)}" alt="" loading="lazy"${i === 0 ? ' class="on"' : ""}>`).join("")}
-      <button class="slide-btn prev" type="button" aria-label="Previous image">${chev("M15 5l-7 7 7 7")}</button>
-      <button class="slide-btn next" type="button" aria-label="Next image">${chev("M9 5l7 7-7 7")}</button>
+      <button class="slide-btn slide-prev" type="button" aria-label="Previous image">${chev("M15 5l-7 7 7 7")}</button>
+      <button class="slide-btn slide-next" type="button" aria-label="Next image">${chev("M9 5l7 7-7 7")}</button>
       <div class="slide-dots">${m.slides.map((_, i) => `<i${i === 0 ? ' class="on"' : ""}></i>`).join("")}</div>
     </div>`;
   }
@@ -980,8 +980,8 @@ function armSlides() {
       imgs.forEach((im, k) => im.classList.toggle("on", k === i));
       dots.forEach((dt, k) => dt.classList.toggle("on", k === i));
     };
-    box.querySelector(".prev").addEventListener("click", () => go(-1));
-    box.querySelector(".next").addEventListener("click", () => go(1));
+    box.querySelector(".slide-prev").addEventListener("click", () => go(-1));
+    box.querySelector(".slide-next").addEventListener("click", () => go(1));
     let x0 = null;
     box.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
     box.addEventListener("touchend", (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); x0 = null; });
