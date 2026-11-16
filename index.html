@@ -252,6 +252,7 @@ strong { font-weight: 700; }
 .video video, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
 .video-cap { width: min(100%, var(--video-w)); margin: 8px auto 0; font-size: 11px; }
+video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
 /* big picture at the top of a project page, same width as the video */
 .hero { width: min(100%, var(--hw, var(--video-w))); margin: 0 auto; }
 .hero + .video { margin-top: calc(var(--unit) * 6); }
@@ -262,7 +263,9 @@ strong { font-weight: 700; }
 /* ---------- creative works ---------- */
 .works { display: grid; gap: 16vh; padding-top: 4vh; }
 /* tall pictures shrink so the whole piece fits on screen */
-.work { width: min(100%, var(--video-w), calc(78vh * var(--ar, 1.78))); margin: 0 auto; }
+/* every piece gets the same height (wide pieces get wider, tall pieces narrower) so they read as a set */
+.works { --work-h: min(540px, 68vh); }
+.work { width: min(100%, var(--video-w), calc(var(--work-h) * var(--ar, 1.78))); margin: 0 auto; }
 .work-media { position: relative; overflow: hidden; background: #f1f1ef; }
 .work-media img, .work-media video, .work-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; display: block; }
 .work-media .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
@@ -270,6 +273,22 @@ strong { font-weight: 700; }
 .work-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 24px; margin-top: 14px; align-items: start; }
 .work-tools { color: #8a8a8a; font-size: 11px; line-height: 1.6; text-transform: uppercase; letter-spacing: .03em; }
 .work-tools span { display: block; }
+.work-tools .role { margin-bottom: 10px; }
+/* slideshow */
+.slides img { opacity: 0; transition: opacity .5s ease; }
+.slides img.on { opacity: 1; }
+.slide-btn {
+  position: absolute; top: 50%; z-index: 2; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .35); color: #000; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  opacity: .75; transition: opacity .3s, background .3s;
+}
+.slide-btn:hover, .slide-btn:focus-visible { opacity: 1; background: rgba(255, 255, 255, .6); }
+.slide-btn.prev { left: 12px; } .slide-btn.next { right: 12px; }
+.slide-btn svg { width: 18px; height: 18px; }
+.slide-dots { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 2; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+.slide-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, .5); box-shadow: 0 0 2px rgba(0, 0, 0, .4); }
+.slide-dots i.on { background: #fff; }
 .work-title { text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; font-size: 13px; font-weight: 500; }
 .work-cap { margin: 0; font-size: 13px; line-height: 1.6; max-width: 56ch; }
 @media (max-width: 860px) {
@@ -352,6 +371,7 @@ const SITE = {
      **bold** and _italic_ work everywhere.
    hero: { src, r } is a large picture at the top of the page (shown instead of the video when the video has no src).
          Add w: "560px" to show it smaller, and caption: "..." for a grey caption under it.
+   hover: true on any .mp4 (video, Creative Works media, moodboard images) makes it play only while the mouse is over it.
    video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
           or paste a YouTube / Vimeo link as src. r is the video's shape (16/9 for most videos). */
 const PROJECTS = [
@@ -539,39 +559,45 @@ const PROJECTS = [
    Each work:
      title:   name of the piece
      media:   { src: "images/name.jpg" | "videos/name.mp4" | a YouTube / Vimeo link, r: "width/height" }
-              add loop: true to an .mp4 to make it play silently on repeat (like a moving picture)
-     caption: one sentence explaining the project (**bold** and _italic_ work)
-     tools:   ["Tool", "Tool", ...]  shown in grey under the bottom-left of the picture/video */
+              hover: true on an .mp4 = plays silently only while the mouse is over it
+              slides: ["images/a.png", "images/b.png"] instead of src = a slideshow with left / right arrows
+     caption: one sentence explaining the project (**bold** and _italic_ work); leave out for none
+     role:    shown in grey under the bottom-left of the picture/video
+     tools:   ["Tool", "Tool", ...]  shown in grey under the role
+   Every piece is shown at about the same height, so wide and tall pieces look balanced. */
 const CREATIVE = [
   {
-    title: "Project One",
-    media: { src: "", r: "16/9" },
-    caption: "One sentence explaining the project.",
-    tools: ["Tool A", "Tool B", "Tool C"]
+    title: "alcove - digital photobooth",
+    media: { src: "https://youtu.be/4LSOXiQORRs", r: "16/9" },
+    role: "Product Design and Creative Direction",
+    tools: ["Google AI Studio", "Figma", "GitHub"]
   },
   {
-    title: "Project Two",
-    media: { src: "", r: "4/5" },
-    caption: "One sentence explaining the project.",
-    tools: ["Tool A", "Tool B"]
+    title: "My Soles Worn Out",
+    media: { src: "videos/audioreactive2.mp4", r: "16/9", hover: true },
+    caption: "Experimental visuals for artist Jooyoung's _My Soles Worn Out_ video.",
+    role: "Creative Direction",
+    tools: ["TouchDesigner", "Blob-tracking", "Audio-reactivity"]
   },
   {
-    title: "Project Three",
-    media: { src: "", r: "16/9" },
-    caption: "One sentence explaining the project.",
-    tools: ["Tool A", "Tool B", "Tool C"]
+    title: "Ullor Brand Image",
+    media: { slides: ["images/ullor1.png", "images/ullor2.png", "images/ullor3.png"], r: "1176/1564" },
+    caption: "Brand visuals for Ullor, a sports equipment rental start-up.",
+    role: "Creative Director and Marketing",
+    tools: ["Adobe Photoshop", "Adobe Illustrator"]
   },
   {
-    title: "Project Four",
-    media: { src: "", r: "1/1" },
-    caption: "One sentence explaining the project.",
-    tools: ["Tool A", "Tool B"]
+    title: "Patchwork",
+    media: { slides: ["images/black.png", "images/cddggg.png", "images/reaching out for love.png"], r: "1/1" },
+    caption: "Experimental work.",
+    tools: ["Adobe Photoshop"]
   },
   {
-    title: "Project Five",
-    media: { src: "", r: "16/9" },
-    caption: "One sentence explaining the project.",
-    tools: ["Tool A", "Tool B", "Tool C"]
+    title: "Galaxy",
+    media: { src: "videos/galaxt.mp4", r: "16/9", hover: true },
+    caption: "Experimental audio-reactive visuals.",
+    role: "Creator and Designer",
+    tools: ["TouchDesigner"]
   }
 ];
 
@@ -818,7 +844,8 @@ function seeded(str) {
 }
 function mbItem(img, rand) {
   const x = Math.round(rand() * 60 - 30), y = Math.round(rand() * 60 - 30);
-  const media = !img.src ? "" : /\.(mp4|webm|mov)$/i.test(img.src)
+  const media = !img.src ? "" : /\.(mp4|webm|mov)$/i.test(img.src) && img.hover ? hoverVideo(img.src, img.poster)
+    : /\.(mp4|webm|mov)$/i.test(img.src)
     ? `<video src="${esc(img.src)}" autoplay muted loop playsinline></video>`
     : `<img src="${esc(img.src)}" alt="${esc(img.alt || img.cap || "")}" loading="lazy" draggable="false">`;
   return `<div class="mb-item ${esc(img.size || "medium")}" style="--x:${x}%;--y:${y}%;--x0:${x + 4}%;--y0:${y + 10}%">
@@ -860,9 +887,23 @@ function videoBlock(v) {
   const allow = 'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen';
   const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&cc_load_policy=0&iv_load_policy=3" title="Project video" ${allow}></iframe>`
     : vm ? `<iframe src="https://player.vimeo.com/video/${vm[1]}" title="Project video" ${allow}></iframe>`
+    : src && v.hover ? hoverVideo(src, v.poster)
     : src ? `<video src="${esc(src)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video>`
     : `<span class="vsoon">Video coming soon</span>`;
   return `<div class="video" style="aspect-ratio:${v.r || "16/9"}">${inner}</div>${v.cap ? `<div class="video-cap">${esc(v.cap)}</div>` : ""}`;
+}
+/* hover: true on an .mp4 = silent video that plays while the mouse is over it and pauses when it leaves
+   (on phones, tap to play / pause). "#t=0.1" makes the first frame show before it plays. */
+const hoverVideo = (src, poster) => `<video data-hover src="${esc(src)}#t=0.1" muted loop playsinline preload="metadata"${poster ? ` poster="${esc(poster)}"` : ""}></video>`;
+function armHoverVideos() {
+  document.querySelectorAll("#main video[data-hover]").forEach((v) => {
+    const box = v.parentElement;
+    const play = () => { const p = v.play(); if (p) p.catch(() => {}); box.classList.add("playing"); };
+    const stop = () => { v.pause(); box.classList.remove("playing"); };
+    box.addEventListener("mouseenter", play);
+    box.addEventListener("mouseleave", stop);
+    box.addEventListener("click", (e) => { if (matchMedia("(hover: none)").matches) { e.preventDefault(); v.paused ? play() : stop(); } });
+  });
 }
 const figImg = (im) => `<img src="${esc(im.src)}" alt="${esc(im.alt || "")}" loading="lazy" style="aspect-ratio:${im.r || "auto"}">`;
 const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -911,14 +952,41 @@ function workMedia(m = {}) {
   const allow = 'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen';
   const inner = yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&cc_load_policy=0&iv_load_policy=3" title="Video" ${allow}></iframe>`
     : vm ? `<iframe src="https://player.vimeo.com/video/${vm[1]}" title="Video" ${allow}></iframe>`
+    : /\.(mp4|webm|mov)$/i.test(src) && m.hover ? hoverVideo(src, m.poster)
     : /\.(mp4|webm|mov)$/i.test(src) ? (m.loop
         ? `<video src="${esc(src)}" autoplay muted loop playsinline></video>`
         : `<video src="${esc(src)}" controls playsinline preload="metadata"${m.poster ? ` poster="${esc(m.poster)}"` : ""}></video>`)
     : src ? `<img src="${esc(src)}" alt="${esc(m.alt || "")}" loading="lazy">`
     : `<span class="vsoon">Image or video coming soon</span>`;
+  if (m.slides && m.slides.length) {
+    const chev = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="${d}"/></svg>`;
+    return `<div class="work-media slides" style="aspect-ratio:${m.r || "1/1"}" data-i="0">
+      ${m.slides.map((s, i) => `<img src="${esc(s)}" alt="" loading="lazy"${i === 0 ? ' class="on"' : ""}>`).join("")}
+      <button class="slide-btn prev" type="button" aria-label="Previous image">${chev("M15 5l-7 7 7 7")}</button>
+      <button class="slide-btn next" type="button" aria-label="Next image">${chev("M9 5l7 7-7 7")}</button>
+      <div class="slide-dots">${m.slides.map((_, i) => `<i${i === 0 ? ' class="on"' : ""}></i>`).join("")}</div>
+    </div>`;
+  }
   return `<div class="work-media" style="aspect-ratio:${m.r || "16/9"}">${inner}</div>`;
 }
 const ratio = (r = "16/9") => { const [a, b] = String(r).split("/").map(Number); return a && b ? (a / b).toFixed(4) : 1.7778; };
+/* slideshow arrows + swipe */
+function armSlides() {
+  document.querySelectorAll("#main .slides").forEach((box) => {
+    const imgs = [...box.querySelectorAll("img")], dots = [...box.querySelectorAll(".slide-dots i")];
+    let i = 0;
+    const go = (d) => {
+      i = (i + d + imgs.length) % imgs.length;
+      imgs.forEach((im, k) => im.classList.toggle("on", k === i));
+      dots.forEach((dt, k) => dt.classList.toggle("on", k === i));
+    };
+    box.querySelector(".prev").addEventListener("click", () => go(-1));
+    box.querySelector(".next").addEventListener("click", () => go(1));
+    let x0 = null;
+    box.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    box.addEventListener("touchend", (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); x0 = null; });
+  });
+}
 function renderCreative() {
   return `
     <section class="intro">
@@ -929,7 +997,7 @@ function renderCreative() {
       <article class="work rv" style="--ar:${ratio(w.media && w.media.r)}">
         ${workMedia(w.media)}
         <div class="work-info">
-          <div class="work-tools">${w.tools && w.tools.length ? `Tools used:${w.tools.map((t) => `<span>${esc(t)}</span>`).join("")}` : ""}</div>
+          <div class="work-tools">${w.role ? `<div class="role">Role:<span>${esc(w.role)}</span></div>` : ""}${w.tools && w.tools.length ? `Tools used:${w.tools.map((t) => `<span>${esc(t)}</span>`).join("")}` : ""}</div>
           <div class="work-text">${w.title ? `<h2 class="work-title">${esc(w.title)}</h2>` : ""}${w.caption ? `<p class="work-cap">${fmt(w.caption)}</p>` : ""}</div>
         </div>
       </article>`).join("")}
@@ -988,6 +1056,8 @@ function route() {
     main.innerHTML = html;
     window.scrollTo(0, 0);
     armReveal();
+    armHoverVideos();
+    armSlides();
     const ce = $("#copyEmail");
     if (ce) ce.addEventListener("click", () => {
       navigator.clipboard?.writeText(SITE.email).then(() => { ce.textContent = "Copied"; })
