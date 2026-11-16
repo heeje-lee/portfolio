@@ -245,6 +245,12 @@ strong { font-weight: 700; }
 .video video, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
 .video-cap { width: min(100%, var(--video-w)); margin: 8px auto 0; font-size: 11px; }
+/* big picture at the top of a project page, same width as the video */
+.hero { width: min(100%, var(--video-w)); margin: 0 auto; }
+.hero + .video { margin-top: calc(var(--unit) * 6); }
+.hero img, .inline-fig img { display: block; width: 100%; height: auto; }
+/* picture between paragraphs: a bit wider than the text column, smaller than the hero */
+.inline-fig { --fw: min(calc(100vw - 48px), 640px); width: var(--fw); margin: 2.6em 0 2.6em calc(50% - var(--fw) / 2); }
 
 /* ---------- creative works ---------- */
 .works { display: grid; gap: 16vh; padding-top: 4vh; }
@@ -331,9 +337,11 @@ const SITE = {
 /* Projects appear in this order in the menu and on the home page.
    sections: a list of headed parts, each { label: "Heading", text: [...], imgs: [...] }.
      In text, a string is a paragraph, { h: "Small heading" } is a subheading,
-     { list: ["...", "..."] } is a bulleted list, and { quote: "..." } is a set-off quote line.
+     { list: ["...", "..."] } is a bulleted list, { quote: "..." } is a set-off quote line,
+     and { img: { src: "images/x.jpg", r: "w/h" } } is a picture placed between paragraphs.
      Add stack: true to a section to show its images one on top of the other instead of side by side.
      **bold** and _italic_ work everywhere.
+   hero: { src, r } is a large picture at the top of the page (shown instead of the video when the video has no src).
    video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
           or paste a YouTube / Vimeo link as src. r is the video's shape (16/9 for most videos). */
 const PROJECTS = [
@@ -373,6 +381,7 @@ const PROJECTS = [
     slug: "uav-systems-design-integration", title: "RQ-4 Global Hawk", year: "2024-2026",
     type: "Industry Systems Design & Integration Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
     summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
+    hero: { src: "images/rq4_system.webp", r: "1080/629", alt: "RQ-4 Global Hawk cutaway" },
     video: { src: "", poster: "", r: "16/9", cap: "" },
     sections: [
       { label: "Project Summary & Role", text: [
@@ -380,6 +389,7 @@ const PROJECTS = [
       ] },
       { label: "Engineering Design Philosophy and Thinking", text: [
         "As a Systems Design and Integration Engineer, my job was to know the system of the Global Hawk like the back of my hand.",
+        { img: { src: "images/RQ_4_Cover.jpg", r: "2576/1687", alt: "RQ-4 Global Hawk in flight" } },
         { h: "Systems Design and Re-Design" },
         "Each problem I encounter typically begins with a single PAR (Problem Anomaly Report) from a stakeholder or pilot. These could include PARs such as inaccurate location reporting, unexpected latency, or even inconsistent sensor behavior. Approaching with a _**systems level mindset**_, I begin by _**reviewing the requirements and the legacy design of the system and subsystems**_. From here, I consult the _**Responsible Engineers**_ to gather expert _**insight**_ into how the _**subsystem**_ was originally _**intended to function**_.",
         "After understanding the _**systems logic design**_, if it requires a _**redesign of system logic**_, I consult the _**software team**_ as it gives me a thorough understanding of identifying gaps that could be the cause of the issue. With this technical background in place, I construct an _**improved system design logic**_ with a _**pilot-centered focus**_. It becomes my guiding design principle.",
@@ -400,7 +410,10 @@ const PROJECTS = [
           "_Which subsystems are involved and data is passed throughout before that fault shows up?_",
           "_Which step introduces ambiguity or confusion for the pilot?_"
         ] }
-      ], imgs: [{ c: "#8a96a3", r: "4/3" }, { c: "#2f3640", r: "4/5" }, { c: "#c3c9cf", r: "1/1" }, { c: "#5d6b78", r: "3/4" }] },
+      ], stack: true, imgs: [
+        { src: "images/globalhawk_workflow.png", r: "3400/2020", alt: "Systems Integrator workflow" },
+        { src: "images/globalhawk_icd_hierarchy.png", r: "3120/1528", alt: "ICD and requirements hierarchy" }
+      ] },
       { label: "Reflection", text: [
         "This role taught me how to think through a _**true technical design philosophy**_. I practiced _**forward design thinking as an engineer grounded in requirements, system behavior, and user impact**_. Prioritizing realistic integration constraints and customer needs shaped the way I approach design challenges and problems even in my personal pursuits.",
         "Working in this environment strengthened my ability to _**shift between “engineering mode” and “design mode”**_, allowing me to evaluate which ideas are technically feasible and which are not. This experience broadened my understanding of how _**great design can emerge from deep technical thinking**_, even when aesthetics are irrelevant.",
@@ -832,10 +845,12 @@ function videoBlock(v) {
     : `<span class="vsoon">Video coming soon</span>`;
   return `<div class="video" style="aspect-ratio:${v.r || "16/9"}">${inner}</div>${v.cap ? `<div class="video-cap">${esc(v.cap)}</div>` : ""}`;
 }
+const figImg = (im) => `<img src="${esc(im.src)}" alt="${esc(im.alt || "")}" loading="lazy" style="aspect-ratio:${im.r || "auto"}">`;
 const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 function textBlock(b) {
   if (typeof b === "string") return `<p>${fmt(b)}</p>`;
   if (b.h) return `<div class="sec-sub">${fmt(b.h)}</div>`;
+  if (b.img) return `<figure class="inline-fig rv">${figImg(b.img)}</figure>`;
   if (b.quote) return `<p class="sec-quote">${fmt(b.quote)}</p>`;
   if (b.list) return `<ul class="sec-list">${b.list.map((t) => `<li>${fmt(t)}</li>`).join("")}</ul>`;
   return "";
@@ -854,7 +869,8 @@ function renderProject(p) {
       <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
     </section>
-    ${p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
+    ${p.hero ? `<div class="hero">${figImg(p.hero)}</div>${p.video && p.video.src ? videoBlock(p.video) : ""}`
+      : p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
     ${p.sections ? p.sections.map((sc) => `
       <div class="sec-col"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
       <div class="sec-body">${(sc.text || []).map(textBlock).join("")}</div></div>
