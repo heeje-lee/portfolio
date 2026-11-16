@@ -253,7 +253,7 @@ strong { font-weight: 700; }
 .video .vsoon { position: absolute; inset: 0; display: grid; place-items: center; text-transform: uppercase; letter-spacing: .06em; opacity: .45; }
 .video-cap { width: min(100%, var(--video-w)); margin: 8px auto 0; font-size: 11px; }
 /* big picture at the top of a project page, same width as the video */
-.hero { width: min(100%, var(--video-w)); margin: 0 auto; }
+.hero { width: min(100%, var(--hw, var(--video-w))); margin: 0 auto; }
 .hero + .video { margin-top: calc(var(--unit) * 6); }
 .hero img, .inline-fig img { display: block; width: 100%; height: auto; }
 /* picture between paragraphs: a bit wider than the text column, smaller than the hero */
@@ -351,6 +351,7 @@ const SITE = {
      top: [{ src, r, caption }] puts pictures above a section's heading (each with an optional grey caption).
      **bold** and _italic_ work everywhere.
    hero: { src, r } is a large picture at the top of the page (shown instead of the video when the video has no src).
+         Add w: "560px" to show it smaller, and caption: "..." for a grey caption under it.
    video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
           or paste a YouTube / Vimeo link as src. r is the video's shape (16/9 for most videos). */
 const PROJECTS = [
@@ -475,10 +476,10 @@ const PROJECTS = [
     ]
   },
   {
-    slug: "analog-sampler", title: "Analog Sampler", year: "",
-    type: "", tools: "",
+    slug: "analog-sampler", title: "Analog Sampler", year: "2022",
+    type: "Senior Design Project", tools: "Embedded Systems, Hardware Prototyping, PCB Design, Microcontroller Software Programming",
     summary: "",
-    hero: { src: "images/Analog_Sampler_Prototype.png", r: "1454/1186", alt: "Analog Sampler prototype" },
+    hero: { src: "images/Analog_Sampler_Prototype.png", r: "1454/1186", alt: "Analog Sampler prototype", w: "560px", caption: "Final Prototype" },
     sections: [
       { label: "Context", text: [
         "This project began as a redesign into how _**physical interfaces shape creative workflow.**_ Contemporary music hardware often relies heavily on external software, splitting up the experience of music production and complicating the music creating process. Our goal was to reimagine the sampler not as a peripheral device, but as a _**self-contained system**_ that prioritizes _**clarity, functionality, and prioritizes human interaction**_.",
@@ -500,7 +501,7 @@ const PROJECTS = [
           "LCD refresh limitations influenced how feedback was visualized, prioritizing clarity over animation."
         ] },
         "_**Rather than treating these limitations as obstacles, they became mechanisms for simplifying the user experience and keeping our design focus on the user.**_"
-      ], imgs: [{ c: "#c4c1b9", r: "4/5" }, { c: "#5e5c57", r: "4/3" }] },
+      ] },
       { label: "Prototyping, Initial Sketches & Design Philosophies",
         top: [{ src: "images/PCB_Schematic1.png", r: "1228/1096", alt: "PCB schematic version 1", caption: "PCB Schematic Version 1" }],
         text: [
@@ -514,7 +515,7 @@ const PROJECTS = [
         { list: [
           "For example, when using the song “Runaway” by Kanye West, each piano key was mapped to each button chronologically, making it easier to play the song. Color coding each button by columns distinguished which buttons were the 4x4 beatpad and which were the other functionality buttons."
         ] }
-      ], imgs: [{ c: "#a5a29b", r: "3/4" }, { c: "#3d3b38", r: "1/1" }] },
+      ] },
       { label: "User Work Flow & Interaction Design",
         top: [{ src: "images/PCB_Schematic2.png", r: "1392/1062", alt: "PCB schematic version 2", caption: "PCB Schematic Version 2" }],
         text: [
@@ -523,7 +524,7 @@ const PROJECTS = [
           "For example, the PC connection is pivotal for the pre-processing of the sounds that need to be boarded onto the on board memory. For our software to properly access the sounds, we had to convert the sound files from .wav to .cpp and .h files. Incorporating them into the FLASH memory, gave the user full control of where the sound files will be stored and kept."
         ] },
         "The design also gave the user a simple method to fit more than 16 sounds through a software architecture I designed. There is one column set of 2 buttons, easily distinguishable, used to iterate through the soundbanks on the device. The team used an iteration system where pressing the upper button, “i” will increase in value (++). Then the lower button will lower “i” (--). The “i” is essentially one whole set of sixteen soundbanks."
-      ], imgs: [{ c: "#d9d6cf", r: "4/3" }, { c: "#74716b", r: "4/5" }] },
+      ] },
       { label: "Reflection", text: [
         "This project was my first real experience with _**how engineering can become a medium for artistic expression.**_ It taught me that _**interaction design is created with purpose**_. It requires meaningful decisions at every level. _**As I moved through the project, I found myself going from simply “making the system work” to designing for how a user would feel, think, and flow while creating music.**_",
         "I learned that _**designing for humans often means letting go of technically impressive features or aesthetic flourishes if they stray away from the user.**_",
@@ -887,7 +888,7 @@ function renderProject(p) {
       <dl class="meta">${meta.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <div><h1 class="title">${esc(p.title)}</h1><div class="body">${p.summary ? `<p>${fmt(p.summary)}</p>` : ""}</div></div>
     </section>
-    ${p.hero ? `<div class="hero">${figImg(p.hero)}</div>${p.video && p.video.src ? videoBlock(p.video) : ""}`
+    ${p.hero ? `<figure class="hero" style="margin-block:0;${p.hero.w ? `--hw:${esc(p.hero.w)}` : ""}">${figImg(p.hero)}${p.hero.caption ? `<figcaption class="img-cap">${fmt(p.hero.caption)}</figcaption>` : ""}</figure>${p.video && p.video.src ? videoBlock(p.video) : ""}`
       : p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
     ${p.sections ? p.sections.map((sc) => `
       ${(sc.top || []).map((im) => `<figure class="fig rv" style="--ar:${ratio(im.r)}">${figImg(im)}${im.caption ? `<figcaption class="img-cap">${fmt(im.caption)}</figcaption>` : ""}</figure>`).join("")}
