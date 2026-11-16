@@ -199,7 +199,11 @@ a.item:hover .ph::after { opacity: .08; }
 .stack .item { width: min(100%, var(--video-w)); justify-self: center; transform: none; }
 .stack-item { width: min(100%, var(--video-w)); }
 .stack-item .item { width: 100%; }
-.img-cap { margin-top: 10px; color: #8a8a8a; font-size: 12px; line-height: 1.5; letter-spacing: .02em; }
+.img-cap { margin-top: 10px; color: #8a8a8a; font-size: 12px; line-height: 1.5; letter-spacing: .02em; text-align: center; }
+/* picture above a section heading; tall pictures shrink so they fit on screen */
+.fig { width: min(100%, var(--video-w), calc(78vh * var(--ar, 1.5))); margin: 12vh auto 0; }
+.fig img { display: block; width: 100%; height: auto; }
+.sec-col.after-fig .sec-label { padding-top: 7vh; }
 .sec-text { max-width: 56ch; margin: 0 0 calc(var(--unit) * 6); font-size: 13px; line-height: 1.7; }
 .next {
   display: flex; align-items: center; gap: 12px; text-transform: uppercase;
@@ -344,6 +348,7 @@ const SITE = {
      and { img: { src: "images/x.jpg", r: "w/h" } } is a picture placed between paragraphs.
      Add stack: true to a section to show its images one on top of the other instead of side by side.
      In a stacked section, caption: "..." on an image puts a small grey caption under it.
+     top: [{ src, r, caption }] puts pictures above a section's heading (each with an optional grey caption).
      **bold** and _italic_ work everywhere.
    hero: { src, r } is a large picture at the top of the page (shown instead of the video when the video has no src).
    video: put an .mp4 in a /videos folder and set src: "videos/name.mp4",
@@ -473,6 +478,7 @@ const PROJECTS = [
     slug: "analog-sampler", title: "Analog Sampler", year: "",
     type: "", tools: "",
     summary: "",
+    hero: { src: "images/Analog_Sampler_Prototype.png", r: "1454/1186", alt: "Analog Sampler prototype" },
     sections: [
       { label: "Context", text: [
         "This project began as a redesign into how _**physical interfaces shape creative workflow.**_ Contemporary music hardware often relies heavily on external software, splitting up the experience of music production and complicating the music creating process. Our goal was to reimagine the sampler not as a peripheral device, but as a _**self-contained system**_ that prioritizes _**clarity, functionality, and prioritizes human interaction**_.",
@@ -483,7 +489,9 @@ const PROJECTS = [
         "The analog sampler/mixer (ASM) was designed as a standalone instrument for music creation, live musical performance, and recording within one single system. Features such as equalization filtering, additional effects, and live recording are to be done all within this device.",
         "As a result, design priorities included minimizing workflow interruptions, providing immediate tactile feedback, ease of memory management, and allowing users to focus on creative exploration rather than system management. Connectivity to external software was treated as _**optional rather than essential**_, reinforcing the device’s autonomy. The user became the center and priority of our design principle for this project."
       ] },
-      { label: "Ideation & System Architecture", text: [
+      { label: "Ideation & System Architecture",
+        top: [{ src: "images/Analog_SystemDiagram.png", r: "904/1110", alt: "Analog Sampler system diagram", caption: "System Diagram" }],
+        text: [
         "_**System architecture decisions**_ were guided by _**interaction requirements**_ rather than _**raw technical performance**_.",
         "The core technical features of the _**Teensy 4.1 microcontroller and audio codec were selected to support near-immediate playback, serial communication protocol, onboard memory storage, and real-time visual feedback**_. This allowed us to create an accessible experience to the musical workflow process.",
         "_**Technical constraints directly shaped interaction design**_.",
@@ -493,7 +501,9 @@ const PROJECTS = [
         ] },
         "_**Rather than treating these limitations as obstacles, they became mechanisms for simplifying the user experience and keeping our design focus on the user.**_"
       ], imgs: [{ c: "#c4c1b9", r: "4/5" }, { c: "#5e5c57", r: "4/3" }] },
-      { label: "Prototyping, Initial Sketches & Design Philosophies", text: [
+      { label: "Prototyping, Initial Sketches & Design Philosophies",
+        top: [{ src: "images/PCB_Schematic1.png", r: "1228/1096", alt: "PCB schematic version 1", caption: "PCB Schematic Version 1" }],
+        text: [
         "_**Prototyping emphasized usability over completeness.**_ Early iterations prioritized functional verification, but with repeated testing we were able to improve orientation, accessibility, and serial communication mapping. Reorganizing the beatpad layout and other physical controls to a simple layout, reduced learning time and allowed users to interact intuitively without referencing documentation.",
         "Throughout the initial design processes, performance was ensured in measuring input/output (I/O) delay and signal to ratio (SNR) output. When incremental changes were made to the Analog Sampler (ASM) prototypes, _**I/O delay was measured to ensure that the ASM maintained near immediate playback.**_ In the same way, _**Signal to Noise Ratio (SNR) was measured to ensure that newly implemented hardware components did not increase the SNR output.**_ The team also made sure the ASM remained reliable through pass/fail weekly stress test sessions of the device. During these weekly tests, _**failed edge cases were integrated and taken note of.**_",
         { list: [
@@ -505,7 +515,9 @@ const PROJECTS = [
           "For example, when using the song “Runaway” by Kanye West, each piano key was mapped to each button chronologically, making it easier to play the song. Color coding each button by columns distinguished which buttons were the 4x4 beatpad and which were the other functionality buttons."
         ] }
       ], imgs: [{ c: "#a5a29b", r: "3/4" }, { c: "#3d3b38", r: "1/1" }] },
-      { label: "User Work Flow & Interaction Design", text: [
+      { label: "User Work Flow & Interaction Design",
+        top: [{ src: "images/PCB_Schematic2.png", r: "1392/1062", alt: "PCB schematic version 2", caption: "PCB Schematic Version 2" }],
+        text: [
         "_**User workflow was designed around a small set of repeatable actions: loading sounds, mapping samples, recording, and playback.**_ By limiting the number of interaction modes and relying on consistent physical interactions, the system prevents overcomplication.",
         { list: [
           "For example, the PC connection is pivotal for the pre-processing of the sounds that need to be boarded onto the on board memory. For our software to properly access the sounds, we had to convert the sound files from .wav to .cpp and .h files. Incorporating them into the FLASH memory, gave the user full control of where the sound files will be stored and kept."
@@ -518,7 +530,7 @@ const PROJECTS = [
         "Even when the final prototype functioned, I could clearly see where the design could be improved. For example, including a visual aid for the recording functions or indicating which iteration of the soundbank the user is located on would be huge user-friendly design improvements. This project reframed creativity as something based in _**practicality and purpose, which inspired me to design tools that are not only functional and aesthetically pleasing but also ethical and intuitive to the people who rely on them.**_"
       ] }
     ],
-    cover: { c: "#8c8a84", r: "4/5" }
+    cover: { src: "images/Analog_Sampler_Prototype.png", c: "#8c8a84", r: "1454/1186" }
   }
 ];
 
@@ -878,7 +890,8 @@ function renderProject(p) {
     ${p.hero ? `<div class="hero">${figImg(p.hero)}</div>${p.video && p.video.src ? videoBlock(p.video) : ""}`
       : p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
     ${p.sections ? p.sections.map((sc) => `
-      <div class="sec-col"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
+      ${(sc.top || []).map((im) => `<figure class="fig rv" style="--ar:${ratio(im.r)}">${figImg(im)}${im.caption ? `<figcaption class="img-cap">${fmt(im.caption)}</figcaption>` : ""}</figure>`).join("")}
+      <div class="sec-col${sc.top && sc.top.length ? " after-fig" : ""}"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
       <div class="sec-body">${(sc.text || []).map(textBlock).join("")}</div></div>
       ${!(sc.imgs && sc.imgs.length) ? ""
         : sc.stack ? `<div class="stack">${sc.imgs.map((im) => im.caption
