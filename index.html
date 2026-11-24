@@ -76,6 +76,21 @@ body.splash-visible.splash-img .menu { color: var(--on-image); background: trans
 .root > .branch > .link { justify-content: center; }
 .root > .branch > .link .label { padding-right: 0; }
 .root > .branch > .link:hover .label { opacity: .5; }
+/* Creative Works dropdown: a thin line drops from the item, then the piece names fade in */
+.branch.has-sub { position: relative; }
+.drop {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  display: grid; gap: 2px; min-width: max-content; padding: 10px 16px 12px 18px;
+  background: var(--paper); text-transform: uppercase; letter-spacing: .04em;
+  opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s;
+}
+.drop::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 14px; width: 1px; background: currentColor; }
+.drop a { line-height: 18px; padding: 3px 0; white-space: nowrap; transition: opacity .3s; }
+.drop a:hover { opacity: .5; }
+@media (hover: hover) {
+  .branch.has-sub:hover .drop, .branch.has-sub:focus-within .drop { opacity: 1; visibility: visible; }
+}
+body.splash-visible.splash-img .drop { background: transparent; }
 .root > .branch > .link.current .label { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 
 /* ---------- splash ---------- */
@@ -178,6 +193,8 @@ a.item:hover .ph::after { opacity: .08; }
 .meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 18px; text-transform: uppercase; margin: 0; }
 .meta dt { opacity: .5; }
 .meta dd { margin: 0; }
+.meta.skills { color: #8a8a8a; }
+.meta.skills dt { opacity: 1; }
 .body { max-width: 56ch; margin: 0; font-size: 13px; line-height: 1.7; }
 .body p { margin: 0 0 1em; }
 .sec-label {
@@ -606,6 +623,9 @@ const CREATIVE = [
   }
 ];
 
+/* shown in grey at the top of the Creative Works page */
+const CREATIVE_SKILLS = ["Brand Design", "Art Direction", "Experimental Work", "Vibe Coding", "App Development", "Software UI Interface Design"];
+
 const ABOUT = {
   slug: "about",
   portrait: { src: "images/Heeje_Lee_Pfp.jpg", c: "#e9e6e3", r: "2080/1929", alt: "Portrait of Heeje Lee" },
@@ -624,14 +644,18 @@ const fmt = (s) => esc(s)
 const fullName = `${SITE.first} ${SITE.last}`;
 
 /* ---------- menu ---------- */
+/* menu order: first project, then Creative Works (hover it to see every piece by name), then the rest */
 const MENU = [
-  ...PROJECTS.map((p) => ({ label: p.title, href: "#" + p.slug })),
-  { label: "Creative Works", href: "#creative-works" },
+  ...PROJECTS.slice(0, 1).map((p) => ({ label: p.title, href: "#" + p.slug })),
+  { label: "Creative Works", href: "#creative-works",
+    subs: CREATIVE.map((w, i) => ({ label: w.title, href: "#creative-works", sec: "work-" + i })) },
+  ...PROJECTS.slice(1).map((p) => ({ label: p.title, href: "#" + p.slug })),
   { label: "About", href: "#about" }
 ];
 const tree = $("#tree");
 tree.innerHTML = MENU.map((m) => `
-  <div class="branch"><a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span></a></div>`).join("");
+  <div class="branch${m.subs ? " has-sub" : ""}"><a class="link" href="${m.href}"><span class="label">${esc(m.label)}</span></a>${m.subs ? `
+    <div class="drop">${m.subs.map((s) => `<a href="${s.href}" data-sec="${s.sec}">${esc(s.label)}</a>`).join("")}</div>` : ""}</div>`).join("");
 /* keep the page content clear of the menu, however many rows it wraps to */
 const setMenuH = () => document.documentElement.style.setProperty("--menu-h", tree.offsetHeight + "px");
 setMenuH();
@@ -649,6 +673,7 @@ document.addEventListener("click", (e) => {
     goSection(pendingSec);
   }
 });
+document.querySelectorAll(".drop a").forEach((a) => a.addEventListener("click", () => a.blur()));
 function goSection(sec) {
   const el = sec ? document.getElementById("sec-" + sec) : null;
   window.scrollTo({ top: el ? el.getBoundingClientRect().top + scrollY - 80 : 0, behavior: "smooth" });
@@ -992,11 +1017,11 @@ function armSlides() {
 function renderCreative() {
   return `
     <section class="intro">
-      <dl class="meta"><dt>Works</dt><dd>${CREATIVE.length}</dd></dl>
+      <dl class="meta skills"><dt>Skills</dt><dd>${CREATIVE_SKILLS.map(esc).join(", ")}</dd></dl>
       <div><h1 class="title">Creative Works</h1></div>
     </section>
-    <div class="works">${CREATIVE.map((w) => `
-      <article class="work rv" style="--ar:${ratio(w.media && w.media.r)}">
+    <div class="works">${CREATIVE.map((w, i) => `
+      <article class="work rv" id="sec-work-${i}" style="--ar:${ratio(w.media && w.media.r)}">
         ${workMedia(w.media)}
         <div class="work-info">
           <div class="work-tools">${w.role ? `<div class="role">Role:<span>${esc(w.role)}</span></div>` : ""}${w.tools && w.tools.length ? `Tools used:${w.tools.map((t) => `<span>${esc(t)}</span>`).join("")}` : ""}</div>
