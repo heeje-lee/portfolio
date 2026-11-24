@@ -359,7 +359,6 @@ const SITE = {
   splash: { c: "#ffffff", src: "" },
   email: "heeje.lee@berkeley.edu",
   links: [
-    { label: "Instagram", href: "https://instagram.com/YIHEEJAY" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/heeje-lee" }
   ],
   blurb: "Heeje Lee. Designer and prototyper working between electrical engineering and interaction design. Objects that listen, react and remember."
@@ -822,8 +821,8 @@ function twoUp(imgs, caps = [], hrefs = []) {
 }
 function footer() {
   return `<footer class="foot">
-    <div class="slash">/</div>
-    <div><p>${esc(SITE.blurb)}</p>
+    <div></div>
+    <div>
       <nav><a href="#about" data-sec="contact">Contact</a>${SITE.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>
     </div>
   </footer>`;
