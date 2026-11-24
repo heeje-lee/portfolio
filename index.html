@@ -297,6 +297,11 @@ video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
   .work-text { order: -1; }
 }
 
+/* about: portrait on the left, bio on the right */
+.about-intro { align-items: center; }
+.portrait { margin: 0; width: min(100%, 420px); }
+.portrait img { display: block; width: 100%; height: auto; }
+
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
   padding-block: 18vh 48px; align-items: end;
@@ -603,8 +608,7 @@ const CREATIVE = [
 
 const ABOUT = {
   slug: "about",
-  portrait: { c: "#8b8d88", r: "4/5" },
-  studio: { c: "#cfd0cb", r: "4/3" },
+  portrait: { src: "images/Heeje_Lee_Pfp.jpg", c: "#e9e6e3", r: "2080/1929", alt: "Portrait of Heeje Lee" },
   bio: [
     "Heeje Lee is a designer and creative technologist working at the intersection of art and technology. He's drawn to work that people can feel as much as use, from installations and audio-reactive visuals to interactive objects and brand imagery. Trained as an electrical engineer, he spent four years designing and integrating large-scale systems, where he learned to think about how every decision reaches the person on the other end. He now brings that rigor to more expressive and creative work, using technology as a medium for storytelling and emotion. He is currently pursuing a Master of Design at UC Berkeley, deepening his understanding of the principles and philosophies behind meaningful design."
   ]
@@ -1006,15 +1010,10 @@ function renderCreative() {
 
 function renderAbout() {
   return `
-    <section class="intro">
-      <dl class="meta">
-        <dt>Name</dt><dd>${esc(fullName)}</dd>
-        <dt>Program</dt><dd>MDes, UC Berkeley</dd>
-        <dt>Background</dt><dd>Electrical engineering</dd>
-      </dl>
+    <section class="intro about-intro">
+      <figure class="portrait">${figImg(ABOUT.portrait)}</figure>
       <div><h1 class="title">About</h1><div class="body">${ABOUT.bio.map((t) => `<p>${fmt(t)}</p>`).join("")}</div></div>
     </section>
-    <div class="rows">${twoUp([ABOUT.portrait, ABOUT.studio], ["Portrait", "Studio"])}</div>
     <div class="sec-label" id="sec-contact">Contact</div>
     <ul class="contact-list">
       <li>Email <span class="sel" id="email">${esc(SITE.email)}</span><button class="copy" id="copyEmail" type="button">Copy</button></li>
