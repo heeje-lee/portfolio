@@ -304,8 +304,9 @@ video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
 
 footer.foot {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 36px;
-  padding-block: 18vh 48px; align-items: end;
+  padding-block: 16vh 48px; align-items: center;
 }
+footer.foot .next { padding-block: 0; }
 footer.foot .slash { font-family: var(--sans); font-weight: 500; font-size: 40px; line-height: 1; }
 footer.foot p { margin: 0 0 12px; max-width: 56ch; }
 footer.foot nav { display: flex; gap: 18px; text-transform: uppercase; flex-wrap: wrap; }
@@ -819,9 +820,10 @@ function twoUp(imgs, caps = [], hrefs = []) {
   }
   return out;
 }
-function footer() {
+/* footer: the "Next →" link (on project pages) on the left, Contact / LinkedIn on the right, one line */
+function footer(left = "") {
   return `<footer class="foot">
-    <div></div>
+    <div>${left}</div>
     <div>
       <nav><a href="#about" data-sec="contact">Contact</a>${SITE.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>
     </div>
@@ -879,8 +881,7 @@ function renderMoodboard(p, next) {
       ${blocks(p.process, rand)}
     </section>
     <div class="mb">${(p.imagesAfter || []).map((im) => mbItem(im, rand)).join("")}</div>
-    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
-    ${footer()}`;
+    ${footer(`<a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>`)}`;
 }
 function videoBlock(v) {
   const src = v.src || "";
@@ -943,8 +944,7 @@ function renderProject(p) {
             : item(im, { cap: im.cap })).join("")}</div>`
         : `<div class="rows">${twoUp(sc.imgs, sc.imgs.map((im) => im.cap))}</div>`}`).join("")
     : section("process", "Process", p.process, p.processImgs) + section("prototype", "Prototype", p.prototype, p.protoImgs)}
-    <a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>
-    ${footer()}`;
+    ${footer(`<a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>`)}`;
 }
 
 function workMedia(m = {}) {
