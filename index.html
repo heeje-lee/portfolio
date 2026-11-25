@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>YIHEEJAY Portfolio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Heeje Lee — design and physical computing portfolio">
+<meta name="description" content="Heeje Lee — Design and Creative Technology portfolio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,500;0,700;1,500;1,700&display=swap">
@@ -29,7 +29,7 @@
   --content-x: 24px;
   --video-w: 960px;   /* how wide project videos get; smaller number = smaller video */
   --intro-speed: 1.2s;
-  --intro-easing: cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  --intro-easing: cubic-bezier(0.65, 0, 0.35, 1);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -126,10 +126,16 @@ main {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 0;
   max-width: 1600px;
-  transition: opacity .35s ease-in-out;
+  transition: opacity .35s ease-in-out, transform var(--intro-speed) var(--intro-easing);
 }
 body.bar-closed main { padding-top: calc(14px + var(--menu-h) + 32px + env(safe-area-inset-top, 0px)); }
 main.fade { opacity: 0; }
+/* the page sits one screen below the opening screen and rises with it, like scrolling down */
+body.splash-visible main { transform: translateY(100vh); }
+/* home: covers stacked one above the other, centered; tall ones shrink to fit the screen */
+.home-stack { display: grid; gap: calc(var(--unit) * 10); justify-items: center; }
+.home-cover { width: min(100%, 820px, calc(80vh * var(--ar, 1))); }
+.home-cover .item { width: 100%; transform: none; }
 .rows { display: grid; gap: calc(var(--unit) * 8); }
 .row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
 .row.one { grid-template-columns: 1fr; }
@@ -140,6 +146,7 @@ main.fade { opacity: 0; }
 .item.right { justify-self: end; }
 .reveal { transition: transform 1.33s ease, opacity 1s ease; }
 .item.pre .reveal { opacity: 0; transform: translateY(60px); }
+.home-cover .item.pre .reveal { transform: none; }
 .ph { position: relative; background: var(--c, #999); overflow: hidden; max-width: 100%; }
 .ph img { display: block; width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 .cap {
@@ -246,6 +253,12 @@ video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
 .hero { width: min(100%, var(--hw, var(--video-w))); margin: 0 auto; }
 .hero + .video { margin-top: calc(var(--unit) * 6); }
 .hero img, .inline-fig img { display: block; width: 100%; height: auto; }
+.inline-fig.sized { margin-left: auto; margin-right: auto; }
+/* pictures side by side, all the same height, wider than the text column */
+.inline-row { --fw: min(calc(100vw - 48px), var(--video-w)); width: var(--fw); margin: 2.6em 0 2.6em calc(50% - var(--fw) / 2); }
+.inline-row .row-imgs { display: grid; gap: 12px; align-items: start; }
+.inline-row img { display: block; width: 100%; height: auto; }
+.fine.note { font-size: 11px; color: #8a8a8a; font-style: italic; margin: calc(var(--unit) * 8) 0 0; line-height: 1.6; }
 /* picture between paragraphs: a bit wider than the text column, smaller than the hero */
 .inline-fig { --fw: min(calc(100vw - 48px), 640px); width: var(--fw); margin: 2.6em 0 2.6em calc(50% - var(--fw) / 2); }
 
@@ -264,8 +277,9 @@ video[data-hover] { object-fit: cover; background: #f1f1ef; cursor: pointer; }
 .work-tools span { display: block; }
 .work-tools .role { margin-bottom: 10px; }
 /* slideshow */
-.slides img { opacity: 0; transition: opacity .5s ease; }
-.slides img.on { opacity: 1; }
+.slides .slide { opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s; }
+.slides .slide.on { opacity: 1; visibility: visible; }
+.slides .slide-empty { position: absolute; inset: 0; display: grid; place-items: center; background: #f1f1ef; }
 .slide-btn {
   position: absolute; top: 50%; z-index: 2; transform: translateY(-50%);
   width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
@@ -403,6 +417,7 @@ const PROJECTS = [
   },
   {
     slug: "uav-systems-design-integration", title: "RQ-4 Global Hawk", year: "2024-2026",
+    note: "*Specifics of this project have been left out and cannot be discussed due to clearance requirements and classified information at Northrop Grumman.",
     type: "Industry Systems Design & Integration Experience @ Northrop Grumman", tools: "Systems Design, Hands-on Systems Integration, JIRA, ",
     summary: "Worked on the upgrade and redesign of the Northrop Grumman RQ-4 Global Hawk Systems. The RQ-4 Global Hawk a high-altitude, long-endurance (HALE) unmanned aerial vehicle (UAV) used primarily for intelligence, surveillance, and reconnaissance (ISR)",
     hero: { src: "images/rq4_system.webp", r: "1080/629", alt: "RQ-4 Global Hawk cutaway" },
@@ -449,44 +464,62 @@ const PROJECTS = [
     cover: { src: "images/GlobalHawk_cover.png", r: "1199/754" }
   },
   {
-    /* Moodboard layout: images scatter across the page and drift into place as you scroll
-       (after songforthemute.com/collaborations/birk-x-sftm-chapter). The description sits
-       between imagesBefore and imagesAfter.
-       To put images in the middle of the text, drop an image (or [image, image]) into the
-       overview or process list between two paragraphs, e.g.
-         "First paragraph...",
-         [{ src: "images/a.png", r: "4/3", size: "large", cap: "..." }, { src: "images/b.png", r: "1/1" }],
-         "Next paragraph..."
-       Each image: { c: placeholder color, r: aspect ratio, size: "small" | "medium" | "large",
-                     src: "images/xyz.jpg" (or .mp4 for a looping video), cap: "caption under the image" } */
-    slug: "geographical-communications-network-systems-design", title: "Geographical Communications Network", year: "2022-2024",
-    type: "Industry Systems Design, Test and Verification Experience @ Northrop Grumman", tools: "QGIS, Python, MATLAB, Cameo",
-    layout: "moodboard",
-    cover: { src: "images/geo_cover.png", r: "736/1056", size: "large", cap: "Generic communication network topology" },
-    note: "*Due to clearance issues, specific details of this project have been left out. This project was part of a _**Special Access Program**_ supporting highly classified _**National Security**_ objectives, making precision and security very important throughout the process.",
-    overview: [
-      "Leading the _**redesign**_ of a huge scale _**communication system infrastructure**_, the team’s job was to upgrade the outdated communication network to meet today’s technological standards."
-    ],
-    process: [
-      "Beginning by carefully analyzing _**legacy control documents**_, it included the details of the original system’s requirements. From there, we collaborated with the system design and requirements team to integrate new physical and logical connectivity requirements.",
-      [
-        { src: "images/req_hierarchy_cameo.png", r: "2040/1260", size: "large", cap: "Requirements Hierarchy in Cameo" },
-        { src: "images/act_requirements_cameo.png", r: "2040/2400", size: "medium", cap: "Generic Requirements worked in Cameo" }
-      ],
-      "Primarily using _**QGIS**_ (Quantum Geographic Information System), we ensured the new system met both _**legacy**_ and _**modern**_ technological requirements.",
-      "We used QGIS to map the network layout, optimizing the placement of stations and centers based on the _**distances**_ that would _**minimize latency**_ and _**maximize system efficiency**_. This step required considering not only the technological aspects but also the geographical landscape and the specific behavior of communication technologies. The layout evolved through multiple iterations, driven by feedback from systems engineers with expertise in communications, network infrastructure, software, and requirements management.",
-      { src: "images/commsnetwork_main.png", r: "1290/900", size: "large", cap: "Generic communication network topology" },
-      "To verify that the design would meet both physical and logical specifications, I utilized _**Python scripts**_ within QGIS to collect and analyze data points from the proposed infrastructure. This allowed us to assess the network's _**functionality in real-world conditions**_.",
-      "In addition to the _**systems layout design**_, I conducted _**extensive research**_ into higher-performance communication technologies, evaluating trade-offs between _**single-mode and multi-mode fiber optic cables**_. Understanding the behavior of these technologies at various data rates was critical in meeting the required performance standards. These new technologies were also _**tested and validated in classified labs**_ to ensure the design would deliver the optimal balance of speed and reliability.",
-      "To test and verify both physical and logical requirements together, we used _**MATLAB**_ to perform a _**logical resiliency analysis**_ of the cable layout. This analysis ensured that the network design would not only function efficiently under normal conditions but also withstand potential failures without compromising system integrity.",
-      "We were able to gain invaluable insights into how to approach complex system design within real-world constraints. The continuous discussions with engineers across multiple disciplines especially taught me how to _**prioritize features**_ and make _**informed decisions**_ about what to adjust or sacrifice in the design. With so many different perspectives and objectives at play, making confident engineering decisions was often challenging, but it was crucial to keep the project moving forward.",
-      "I was unable to see the end of this project as it is still ongoing and one of the biggest projects at Northrop Grumman."
-    ],
-    imagesBefore: [
-      /*{ c: "#c9d3c0", r: "1/1", size: "medium", cap: "Caption" },*/
-    ],
-    imagesAfter: [
-    /*  { c: "#e2532d", r: "4/5", size: "small", cap: "Caption" },*/
+    /* Ullor: standard project page.
+       In a section's text, { img: {...}, caption: "...", w: "320px" } puts a picture between paragraphs
+       (w = how wide; leave it out for full width), and { row: [img, img, img], caption: "..." }
+       puts pictures side by side with one grey caption under the row. */
+    slug: "ullor", title: "Ullor", year: "2023-2025",
+    type: "Brand Direction and Image, Marketing",
+    tools: "Adobe Illustrator, User Research, User Prototype Testing",
+    summary: "Sports Equipment Early Start-Up Venture",
+    hero: { src: "images/ullor1.png", r: "1176/1564", w: "520px", alt: "Ullor brand image: surfers in the ocean" },
+    cover: { src: "images/ullor1.png", r: "1176/1564" },
+    sections: [
+      { label: "Context / Overview", text: [
+        "Ullor is a design exploration and project venture centered on a simple behavioral question:",
+        { quote: "Why do people purchase expensive sports equipment they rarely use, and what design systems might encourage _**sharing instead of ownership**_?" },
+        "Rather than approaching Ullor primarily as a startup, I approached it as a _**design system**_ that operates across _**identity, trust, and community behavior**_. The platform explores how _**visual language, narrative framing, and social cues**_ can shift users from individual ownership toward _**collective, shared participation**_."
+      ]},
+      { label: "My Role", text: [
+        "I led the _**brand direction and marketing strategy**_ for Ullor, taking charge of developing the _**company name**_, designing the _**logo**_, and shaping the overall _**brand identity and visual language**_. I also collaborated with my team on _**market and competitor research**_ to determine the most effective business model. Drawing from established rental platforms, we refined our strategy through _**legal consultations**_ to identify liabilities, insurance needs, and operational gaps."
+      ]},
+      { label: "Design Problem", text: [
+        "Traditional sports rental experiences are _**transactional and often costly**_. At the same time, privately owned equipment _**sits idle for most of its lifespan**_. The core design challenge became less about logistics and more about _**psychology**_:",
+        { list: [
+          "How do you make renting feel _**personal rather than anonymous**_?",
+          "How do you establish _**trust between neighbors**_?",
+          "How do you design a system where people feel _**safe sharing their equipment, with no risk**_?"
+        ]}
+      ]},
+      { label: "Brand as Behavioral Interface", text: [
+        "I approached Ullor’s brand not as an aesthetic, but as a _**reflection of human behavior**_. Each visual element was chosen based on how it would _**shape user perception and action**_. The name Ullor is derived from _**Ullr, the Norse god**_ associated with winter sports. Because the company started with the idea of renting winter sports equipment, the name felt perfect for reflecting the _**original idea of the brand**_.",
+        { h: "Font and Logo Exploration" },
+        "The various logo systems I designed reference _**Ullr’s skis**_ through paired “L” forms, subtly building _**motion and balance**_ into the typography. These visual cues support the ideas of _**outdoor activity and action**_, which are key brand images of the company.",
+        { img: { src: "images/Logo_Exploration.png", r: "562/784", alt: "Ullor logo and font exploration sketches" }, w: "380px",
+          caption: "An early sketch exploring an in-action figure, reflecting the brand’s direction of centering the user as the hero through movement, agency, and performance." },
+        { h: "Designing for Trust and Identification" },
+        "Rather than centering the equipment itself, I intentionally designed Ullor’s visual system around _**people in action**_. Photography and imagery focus on athletes such as _**families, friends, and even professionals**_. This decision was mainly driven by _**user psychology**_. By depicting _**relatable everyday figures**_, Ullor reframes sports participation as _**accessible, communal, and low-risk**_. By also depicting _**famous athletes**_, Ullor gives users a _**“hero” figure**_ to aspire to be. The brand’s guiding message, _**“Do Anything. Be Anybody.”**_, reinforces this mindset shift. Instead of positioning gear as an investment, the design encourages _**experimentation, curiosity, and exploration without long-term commitment**_.",
+        { row: [
+            { src: "images/ullor2.png", r: "1176/1566", alt: "Ullor: surfers on the beach" },
+            { src: "images/ullor3.png", r: "1180/1570", alt: "Ullor: surfers in the waves" },
+            { src: "images/ULLOR_HERO.png", r: "1000/1148", alt: "Ullor conceptual hero image" }
+          ],
+          caption: "Left and center: surfers photographed on the beach explore themes of unity and community, giving a message of collective participation in outdoor activity and shared public space. Right: conceptual “HERO” image of the brand and service ULLOR." },
+        { img: { src: "images/PANTONE RED.png", r: "440/660", alt: "Pantone 18-1763 TCX High Risk Red" }, w: "260px" },
+        "After exploring many color directions, we chose _**PANTONE 18-1763 High Risk Red**_ to carry the brand’s message of _**championships and risk-taking**_: getting out there, being the hero, and taking the opportunity you have always wanted to grasp. The choice was also inspired by championship teams that wear red, such as the _**San Francisco 49ers**_ and _**Manchester United**_, clubs known for their _**winning cultures**_. The color champions _**the hero**_ in every user."
+      ]},
+      { label: "Designing Within System Constraints", text: [
+        "I approached the platform’s design logic as a _**holistic ecosystem of interconnected decisions**_ rather than one linear product. I continuously asked questions such as:",
+        { list: [
+          "How does a visual decision affect _**perceived trust**_?",
+          "How does community imagery _**reduce perceived risk**_?",
+          "How do naming, tone, and layout influence _**willingness to participate**_?"
+        ]},
+        "These considerations guided not only visual design, but also strategic decisions such as _**focusing on a single sport, pickleball, during early testing**_. Narrowing the scope allowed the design system to _**strengthen behavioral clarity**_ before expanding into broader use cases."
+      ]},
+      { label: "Appendix: Extending Design Into Physical Space", text: [
+        "To test Ullor’s behavioral hypotheses beyond the screen, I proposed _**community-based physical actions**_ such as _**printed posters in local sports parks**_ and _**hosting neighborhood pickleball events**_. These moments transform the brand from a digital interface into a _**lived experience**_. By placing the brand directly in physical spaces, the design reinforces Ullor’s role as a _**community facilitator**_ rather than a distant service. These extensions _**build trust and encourage participation through familiarity**_."
+      ]}
     ]
   },
   {
@@ -574,11 +607,12 @@ const CREATIVE = [
     tools: ["TouchDesigner", "Blob-tracking", "Audio-reactivity"]
   },
   {
-    title: "Ullor Brand Image",
-    media: { slides: ["images/ullor1.png", "images/ullor2.png", "images/ullor3.png"], r: "1176/1564" },
-    caption: "Brand visuals for Ullor, a sports equipment rental start-up.",
-    role: "Creative Director and Marketing",
-    tools: ["Adobe Photoshop", "Adobe Illustrator"]
+    title: "LNEINTW Radio Series",
+    /* slideshow of YouTube videos: paste each episode's link in the list, in order */
+    media: { slides: ["https://youtu.be/kBXGmWB8018", "https://youtu.be/8bO5G5Gi690", "https://youtu.be/RE1JzXD2T1g", "https://youtu.be/jAvVI8OIYj8"], r: "16/9" },
+    caption: "A one-month radio series displaying music that inspires me and reflects my personal identity.",
+    role: "Creative Director and Music Curator",
+    tools: ["YouTube", "Adobe Premiere Pro"]
   },
   {
     title: "Patchwork",
@@ -592,6 +626,12 @@ const CREATIVE = [
     caption: "Experimental audio-reactive visuals.",
     role: "Creator and Designer",
     tools: ["TouchDesigner"]
+  },
+  {
+    title: "visualaudio",
+    media: { slides: ["images/bp-visualaudio3.png", "images/son-visualaudio.png", "images/starwars-visualaudio.png", "images/visualaudio-coffee.png", "images/td-visualaudio.png"], r: "1/1" },
+    caption: "Experimental work for a music technology brand: “images you can hear.”",
+    tools: ["Adobe Illustrator", "Adobe Photoshop"]
   }
 ];
 
@@ -893,12 +933,11 @@ function footer(left = "") {
   </footer>`;
 }
 
+/* home: project covers stacked in one centered column */
 function renderHome() {
-  return `<div class="rows">${twoUp(
-    PROJECTS.map((p) => p.cover),
-    PROJECTS.map((p) => `View ${p.title}`),
-    PROJECTS.map((p) => "#" + p.slug)
-  )}</div>${footer()}`;
+  return `<div class="home-stack">${PROJECTS.map((p) => `
+    <div class="home-cover" style="--ar:${ratio(p.cover.r)}">${item(p.cover, { cap: `View ${p.title}`, href: "#" + p.slug, w: 100 })}</div>`).join("")}
+  </div>${footer()}`;
 }
 
 
@@ -976,7 +1015,8 @@ const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 function textBlock(b) {
   if (typeof b === "string") return `<p>${fmt(b)}</p>`;
   if (b.h) return `<div class="sec-sub">${fmt(b.h)}</div>`;
-  if (b.img) return `<figure class="inline-fig rv">${figImg(b.img)}</figure>`;
+  if (b.img) return `<figure class="inline-fig rv${b.w ? " sized" : ""}"${b.w ? ` style="--fw:min(100%, ${esc(b.w)})"` : ""}>${figImg(b.img)}${b.caption ? `<figcaption class="img-cap">${fmt(b.caption)}</figcaption>` : ""}</figure>`;
+  if (b.row) return `<figure class="inline-row rv"><div class="row-imgs" style="grid-template-columns:${b.row.map((im) => ratio(im.r) + "fr").join(" ")}">${b.row.map(figImg).join("")}</div>${b.caption ? `<figcaption class="img-cap">${fmt(b.caption)}</figcaption>` : ""}</figure>`;
   if (b.quote) return `<p class="sec-quote">${fmt(b.quote)}</p>`;
   if (b.list) return `<ul class="sec-list">${b.list.map((t) => `<li>${fmt(t)}</li>`).join("")}</ul>`;
   return "";
@@ -997,6 +1037,7 @@ function renderProject(p) {
     </section>
     ${p.hero ? `<figure class="hero" style="margin-block:0;${p.hero.w ? `--hw:${esc(p.hero.w)}` : ""}">${figImg(p.hero)}${p.hero.caption ? `<figcaption class="img-cap">${fmt(p.hero.caption)}</figcaption>` : ""}</figure>${p.video && p.video.src ? videoBlock(p.video) : ""}`
       : p.video ? videoBlock(p.video) : `<div class="rows"><div class="row one">${item(p.cover, { cap: p.title, w: 62 })}</div></div>`}
+    ${p.note ? `<div class="sec-col"><p class="fine note rv">${fmt(p.note)}</p></div>` : ""}
     ${p.sections ? p.sections.map((sc) => `
       ${(sc.top || []).map((im) => `<figure class="fig rv" style="--ar:${ratio(im.r)}">${figImg(im)}${im.caption ? `<figcaption class="img-cap">${fmt(im.caption)}</figcaption>` : ""}</figure>`).join("")}
       <div class="sec-col${sc.top && sc.top.length ? " after-fig" : ""}"><div class="sec-label" id="sec-${slugify(sc.label)}">${esc(sc.label)}</div>
@@ -1010,6 +1051,14 @@ function renderProject(p) {
     ${footer(`<a class="next" href="#${next.slug}">Next <span class="line"></span> ${esc(next.title)}</a>`)}`;
 }
 
+/* one slide: an image, a YouTube video, or (if empty) a placeholder */
+function slide(s, i) {
+  const on = i === 0 ? " on" : "";
+  const yt = String(s || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  if (yt) return `<iframe class="slide${on}" src="https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&cc_load_policy=0&iv_load_policy=3&enablejsapi=1" title="Video ${i + 1}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen loading="lazy"></iframe>`;
+  if (!s) return `<div class="slide slide-empty${on}"><span class="vsoon">Video ${i + 1} coming soon</span></div>`;
+  return `<img class="slide${on}" src="${esc(s)}" alt="" loading="lazy">`;
+}
 function workMedia(m = {}) {
   const src = m.src || "";
   const yt = src.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
@@ -1026,7 +1075,7 @@ function workMedia(m = {}) {
   if (m.slides && m.slides.length) {
     const chev = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="${d}"/></svg>`;
     return `<div class="work-media slides" style="aspect-ratio:${m.r || "1/1"}" data-i="0">
-      ${m.slides.map((s, i) => `<img src="${esc(s)}" alt="" loading="lazy"${i === 0 ? ' class="on"' : ""}>`).join("")}
+      ${m.slides.map((s, i) => slide(s, i)).join("")}
       <button class="slide-btn slide-prev" type="button" aria-label="Previous image">${chev("M15 5l-7 7 7 7")}</button>
       <button class="slide-btn slide-next" type="button" aria-label="Next image">${chev("M9 5l7 7-7 7")}</button>
       <div class="slide-dots">${m.slides.map((_, i) => `<i${i === 0 ? ' class="on"' : ""}></i>`).join("")}</div>
@@ -1038,11 +1087,15 @@ const ratio = (r = "16/9") => { const [a, b] = String(r).split("/").map(Number);
 /* slideshow arrows + swipe */
 function armSlides() {
   document.querySelectorAll("#main .slides").forEach((box) => {
-    const imgs = [...box.querySelectorAll("img")], dots = [...box.querySelectorAll(".slide-dots i")];
+    const imgs = [...box.querySelectorAll(".slide")], dots = [...box.querySelectorAll(".slide-dots i")];
     let i = 0;
     const go = (d) => {
       i = (i + d + imgs.length) % imgs.length;
-      imgs.forEach((im, k) => im.classList.toggle("on", k === i));
+      imgs.forEach((im, k) => {
+        /* pause a YouTube video when you move off its slide */
+        if (k !== i && im.tagName === "IFRAME" && im.classList.contains("on")) im.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*");
+        im.classList.toggle("on", k === i);
+      });
       dots.forEach((dt, k) => dt.classList.toggle("on", k === i));
     };
     box.querySelector(".slide-prev").addEventListener("click", () => go(-1));
@@ -1093,7 +1146,8 @@ function armReveal() {
     entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.remove("pre"); io.unobserve(en.target); } });
   }, { rootMargin: "0px 0px -8% 0px" });
   document.querySelectorAll("#main .item, #main .rv").forEach((el) => {
-    if (el.getBoundingClientRect().top > innerHeight * 0.92) { el.classList.add("pre"); io.observe(el); }
+    const top = el.getBoundingClientRect().top - (document.body.classList.contains("splash-visible") ? innerHeight : 0);
+    if (top > innerHeight * 0.92) { el.classList.add("pre"); io.observe(el); }
   });
   /* moodboard images drift into place as they enter, including the ones already on screen */
   const mbIo = new IntersectionObserver((entries) => {
