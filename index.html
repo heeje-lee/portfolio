@@ -111,45 +111,13 @@ body.splash-visible.splash-img .drop { background: transparent; }
 .splash .ph img.loaded { opacity: 1; }
 @keyframes showup { from { opacity: 0; } to { opacity: 1; } }
 
-/* braille "YIHEEJAY" on the opening screen; dots pop in at random within 5s on each load.
-   Proportions follow standard braille: dot 1.5, dot spacing 2.5, cell pitch 6 (in --u). */
-.braille {
-  --u: clamp(5px, 1.1vw, 12px);
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  display: flex; z-index: 1;
-  color: var(--ink); pointer-events: none;
+/* point cloud "YIHEEJAY" on the opening screen: the word is made of thousands of points
+   that gather in on load and scatter away from the cursor, then drift back */
+.cloud {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  color: var(--ink); display: block;
 }
-body.splash-img .braille { color: var(--on-image); }
-/* once every dot is in, the word can be hovered */
-.braille.ready { pointer-events: auto; }
-/* each cell is padded so the hover targets touch (no dead gaps between letters) */
-.braille .cell { position: relative; padding: calc(var(--u) * 2) calc(var(--u) * 1.75); }
-.braille .dots {
-  display: grid; grid-template-columns: repeat(2, calc(var(--u) * 1.5));
-  grid-template-rows: repeat(3, calc(var(--u) * 1.5));
-  grid-auto-flow: column; gap: calc(var(--u) * 1);
-}
-.braille .dot {
-  width: 100%; height: 100%; border-radius: 50%; background: currentColor;
-  opacity: 0; transform: scale(.3);
-  transition: opacity .45s ease, transform .45s cubic-bezier(.3, 1.6, .5, 1);
-}
-.braille .dot.empty { visibility: hidden; }
-.braille .dot.on { opacity: 1; transform: scale(1); }
-/* English letter, same Futura as the menu, cap height about the height of a braille cell */
-.braille .letter {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font: 500 calc(var(--u) * 9)/1 var(--mono); text-transform: uppercase;
-  opacity: 0; transform: translateY(calc(var(--u) * .8));
-  transition: opacity .3s ease, transform .3s ease;
-  pointer-events: none;
-}
-.braille .cell .dot.on { transition: opacity .3s ease, transform .3s ease; }
-.braille .cell.en .dot.on { opacity: 0; transform: scale(.4); }
-.braille .cell.en .letter { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .braille .dot, .braille .letter, .braille .cell .dot.on { transition: none; }
-}
+body.splash-img .cloud { color: var(--on-image); }
 
 /* ---------- content ---------- */
 main {
@@ -362,7 +330,7 @@ footer.foot nav a:hover { text-decoration: underline; text-underline-offset: 2px
 
 <section class="splash" id="splash" aria-label="Intro">
   <div class="ph" id="splashPh"></div>
-  <div class="braille" id="braille" role="img" aria-label="YIHEEJAY in braille"></div>
+  <canvas class="cloud" id="cloud" role="img" aria-label="YIHEEJAY"></canvas>
 </section>
 
 <main id="main"></main>
@@ -700,66 +668,128 @@ if (SITE.splash.src) {
 }
 $("#splashPh").style.background = SITE.splash.c;
 
-/* braille: YIHEEJAY. Dots numbered 1-2-3 down the left column, 4-5-6 down the right. */
-const BRAILLE_WORD = "YIHEEJAY";
-const BRAILLE_DOTS = { Y: [1, 3, 4, 5, 6], I: [2, 4], H: [1, 2, 5], E: [1, 5], J: [2, 4, 5], A: [1] };
-const BRAILLE_TIME = 5000;  /* every dot is in by 5 seconds */
-const BRAILLE_HOLD = 5000;  /* a left-to-right swipe shows the English word this long */
+/* point cloud: YIHEEJAY
+   The word is drawn once off-screen, sampled into points, and each point gets a random depth.
+   Points spring toward their spot in the word; the cursor pushes them away (harder the closer
+   it is, and more for points nearer the front), and the whole cloud tilts gently with the mouse. */
+const CLOUD = {
+  word: "YIHEEJAY",
+  gap: 3.3,         /* spacing between sampled points, in px (smaller = denser) */
+  radius: 140,      /* how far the cursor's push reaches, in px */
+  force: 9,         /* how hard it pushes */
+  spring: 0.045,    /* how quickly points return */
+  damping: 0.86,    /* how floaty the motion is (closer to 1 = floatier) */
+  depth: 70,        /* how deep the cloud is, in px */
+  tilt: 0.18        /* how much the cloud turns with the mouse */
+};
 (() => {
-  const box = $("#braille");
-  box.innerHTML = [...BRAILLE_WORD].map((ch) => `<div class="cell"><div class="dots">${[1, 2, 3, 4, 5, 6]
-    .map((n) => `<span class="dot${BRAILLE_DOTS[ch].includes(n) ? "" : " empty"}"></span>`).join("")}</div><span class="letter" aria-hidden="true">${ch}</span></div>`).join("");
-  const cells = [...box.querySelectorAll(".cell")];
-  const dots = [...box.querySelectorAll(".dot:not(.empty)")];
+  const cv = $("#cloud"), ctx = cv.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, dpr = 1, pts = [], born = 0;
+  const mouse = { x: -1e4, y: -1e4, on: false };
+  let rx = 0, ry = 0;   /* current tilt, eased toward the mouse */
 
-  /* 1. dots pop in at random; the word becomes hoverable when the last one lands */
-  let last = 0;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) dots.forEach((d) => d.classList.add("on"));
-  else dots.forEach((d) => {
-    const t = 150 + Math.random() * (BRAILLE_TIME - 600);   /* + .45s transition = in by 5s */
-    last = Math.max(last, t);
-    setTimeout(() => d.classList.add("on"), t);
-  });
-  setTimeout(() => box.classList.add("ready"), last + 450);
-
-  /* 2. hover a letter: it turns English, then back to braille shortly after you leave */
-  let whole = false, wholeTimer;
-  const leaveTimers = new Map();
-  cells.forEach((c) => {
-    c.addEventListener("pointerenter", () => { clearTimeout(leaveTimers.get(c)); c.classList.add("en"); });
-    c.addEventListener("pointerleave", () => {
-      if (whole) return;
-      leaveTimers.set(c, setTimeout(() => c.classList.remove("en"), 350));
-    });
-  });
-
-  /* 3. one left-to-right sweep across the word: all of it turns English for 5s */
-  let sweep = null;   /* { x: furthest x so far, t: start time } */
-  const rect = () => box.getBoundingClientRect();
-  function flipAll() {
-    whole = true;
-    cells.forEach((c) => { clearTimeout(leaveTimers.get(c)); c.classList.add("en"); });
-    clearTimeout(wholeTimer);
-    wholeTimer = setTimeout(() => {
-      whole = false;
-      cells.forEach((c) => { if (!c.matches(":hover")) c.classList.remove("en"); });
-    }, BRAILLE_HOLD);
+  function build() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    if (!W || !H) return;
+    cv.width = W * dpr; cv.height = H * dpr;
+    /* draw the word big and centered, then read back which pixels are filled */
+    const off = document.createElement("canvas"); off.width = W; off.height = H;
+    const o = off.getContext("2d");
+    const fam = getComputedStyle(document.body).getPropertyValue("--mono") || "sans-serif";
+    let size = Math.min(H * 0.26, 240);
+    const setFont = () => { o.font = `500 ${size}px ${fam}`; if ("letterSpacing" in o) o.letterSpacing = size * 0.04 + "px"; };
+    setFont();
+    const maxW = W * (W < 700 ? 0.8 : 0.72);
+    const tw = o.measureText(CLOUD.word).width;
+    if (tw > maxW) { size *= maxW / tw; setFont(); }
+    o.textAlign = "center"; o.textBaseline = "middle";
+    o.fillText(CLOUD.word, W / 2, H / 2);
+    const data = o.getImageData(0, 0, W, H).data;
+    const g = Math.max(2.2, CLOUD.gap * Math.min(1, size / 200));
+    const old = pts; pts = [];
+    for (let y = 0; y < H; y += g) for (let x = 0; x < W; x += g) {
+      const jx = x + (Math.random() - .5) * g * .9, jy = y + (Math.random() - .5) * g * .9;
+      const xi = jx | 0, yi = jy | 0;
+      if (xi < 0 || yi < 0 || xi >= W || yi >= H || data[(yi * W + xi) * 4 + 3] < 128) continue;
+      const z = (Math.random() - .5) * CLOUD.depth;
+      const prev = old[pts.length];
+      pts.push({
+        hx: jx, hy: jy, hz: z,
+        /* on first load, start scattered across the screen and gather in */
+        x: prev ? prev.x : (still ? jx : Math.random() * W),
+        y: prev ? prev.y : (still ? jy : Math.random() * H),
+        vx: 0, vy: 0,
+        r: .55 + Math.random() * .75,
+        delay: Math.random() * 900,
+        ph: Math.random() * 6.28
+      });
+    }
+    /* a few loose points floating around the word, like stray samples in a scan */
+    const n = Math.round(pts.length * .025);
+    for (let i = 0; i < n; i++) {
+      const a = pts[(Math.random() * pts.length) | 0]; if (!a) break;
+      const hx = a.hx + (Math.random() - .5) * size * 1.2, hy = a.hy + (Math.random() - .5) * size * .9;
+      pts.push({ hx, hy, hz: (Math.random() - .5) * CLOUD.depth * 2, x: Math.random() * W, y: Math.random() * H,
+        vx: 0, vy: 0, r: .4 + Math.random() * .5, delay: Math.random() * 1400, ph: Math.random() * 6.28, stray: true });
+    }
   }
-  box.addEventListener("pointerenter", (e) => {
-    const r = rect();
-    sweep = e.clientX - r.left < r.width * 0.15 ? { x: e.clientX, t: performance.now() } : null;
-  });
-  box.addEventListener("pointermove", (e) => {
-    if (!sweep) return;
-    const r = rect();
-    if (e.clientX < sweep.x - 12 || performance.now() - sweep.t > 1600) { sweep = null; return; }   /* went back, or too slow */
-    sweep.x = Math.max(sweep.x, e.clientX);
-    if (e.clientX - r.left > r.width * 0.88) { sweep = null; flipAll(); }
-  });
-  box.addEventListener("pointerleave", (e) => {
-    if (sweep && e.clientX >= rect().right - 4 && performance.now() - sweep.t <= 1600) flipAll();
-    sweep = null;
-  });
+
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (splash.hidden || !W) return;
+    if (!born) born = t;
+    const age = t - born;
+    const cx = W / 2, cy = H / 2;
+    /* tilt toward the mouse */
+    const tx = mouse.on ? (mouse.y - cy) / H * -CLOUD.tilt : 0;
+    const ty = mouse.on ? (mouse.x - cx) / W * CLOUD.tilt : 0;
+    rx += (tx - rx) * .05; ry += (ty - ry) * .05;
+    const sx = Math.sin(ry), cxr = Math.cos(ry), sxr = Math.sin(rx), cyr = Math.cos(rx);
+    const R = CLOUD.radius, R2 = R * R;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = getComputedStyle(cv).color;
+    for (const p of pts) {
+      /* home position, turned in 3D and projected back to the screen */
+      const dx = p.hx - cx, dy = p.hy - cy;
+      const z1 = -dx * sx + p.hz * cxr, x1 = dx * cxr + p.hz * sx;
+      const y2 = dy * cyr - z1 * sxr, z2 = dy * sxr + z1 * cyr;
+      const k = 600 / (600 - z2);
+      let gx = cx + x1 * k, gy = cy + y2 * k;
+      if (!still) { gx += Math.sin(t * .0011 + p.ph) * .6; gy += Math.cos(t * .0013 + p.ph) * .6; }   /* faint shimmer */
+      if (age > p.delay || still) {
+        p.vx += (gx - p.x) * CLOUD.spring; p.vy += (gy - p.y) * CLOUD.spring;
+      }
+      /* cursor push: falls off with distance, stronger for points nearer the front */
+      if (mouse.on && !still) {
+        const mx = p.x - mouse.x, my = p.y - mouse.y, d2 = mx * mx + my * my;
+        if (d2 < R2 && d2 > .01) {
+          const d = Math.sqrt(d2), f = (1 - d / R) ** 2 * CLOUD.force * (0.7 + k * .3);
+          p.vx += mx / d * f; p.vy += my / d * f;
+        }
+      }
+      p.vx *= CLOUD.damping; p.vy *= CLOUD.damping;
+      p.x += p.vx; p.y += p.vy;
+      /* nearer points draw a touch bigger and darker; fast-moving points fade slightly */
+      const sp = Math.min(1, Math.hypot(p.vx, p.vy) / 14);
+      ctx.globalAlpha = Math.max(.15, Math.min(1, (p.stray ? .5 : .72 + (k - 1) * 4) - sp * .3));
+      const r = p.r * k * (p.stray ? 1 : 1.05);
+      ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  cv.addEventListener("pointermove", (e) => { const b = cv.getBoundingClientRect(); mouse.x = e.clientX - b.left; mouse.y = e.clientY - b.top; mouse.on = true; });
+  cv.addEventListener("pointerdown", (e) => { const b = cv.getBoundingClientRect(); mouse.x = e.clientX - b.left; mouse.y = e.clientY - b.top; mouse.on = true; });
+  cv.addEventListener("pointerleave", () => { mouse.on = false; });
+  cv.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") mouse.on = false; });
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(build, 150); });
+  /* wait for Futura/Jost so the points take the right letter shapes */
+  (document.fonts ? document.fonts.load('500 100px "Jost"').catch(() => {}).then(() => document.fonts.ready) : Promise.resolve())
+    .then(() => { build(); requestAnimationFrame(frame); });
 })();
 
 let splashOn = false;
